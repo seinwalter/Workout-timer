@@ -8,7 +8,7 @@ const WorkoutTimer = () => {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isResting, setIsResting] = useState(false);
-  const [workoutStyle, setWorkoutStyle] = useState('circuit'); // 'circuit' or 'individual'
+  const [workoutStyle, setWorkoutStyle] = useState('circuit');
 
   const workouts = {
     beach: [
@@ -34,7 +34,7 @@ const WorkoutTimer = () => {
   };
 
   useEffect(() => {
-    let interval = null;
+    let interval: NodeJS.Timeout | null = null;
     if (isActive) {
       interval = setInterval(() => {
         setSeconds(seconds => {
@@ -52,7 +52,7 @@ const WorkoutTimer = () => {
                 } else {
                   setCurrentExercise(curr => curr + 1);
                 }
-              } else { // individual style
+              } else {
                 if (currentRound === 4) {
                   if (currentExercise === workouts[workoutType].length - 1) {
                     setIsActive(false);
@@ -74,7 +74,9 @@ const WorkoutTimer = () => {
         });
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isActive, seconds, currentExercise, currentRound, isResting, workoutType, workoutStyle]);
 
   const toggleTimer = () => {
