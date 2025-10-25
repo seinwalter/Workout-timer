@@ -173,7 +173,7 @@
         .timer-section {
             background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             margin-bottom: 20px;
             border: 1px solid #333;
             box-shadow: 0 8px 24px rgba(0,0,0,0.3);
@@ -186,6 +186,147 @@
             color: #999;
             font-weight: 600;
             letter-spacing: 1px;
+        }
+
+        .current-exercise-display {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #2a1a1a 0%, #221a1a 100%);
+            border-radius: 10px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 4px 16px rgba(255, 107, 107, 0.2);
+            animation: slideIn 0.5s ease;
+        }
+
+        .exercise-progress {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .current-exercise-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .current-exercise-details {
+            font-size: 1rem;
+            color: #ccc;
+            line-height: 1.6;
+        }
+
+        .next-up-display {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            background: #1a1a1a;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .next-up-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .next-up-name {
+            font-size: 0.95rem;
+            color: #999;
+            font-weight: 600;
+        }
+
+        .exercise-tracker {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .tracker-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .tracker-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid #444;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tracker-dot.active {
+            background: #ff6b6b;
+            border-color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            transform: scale(1.3);
+        }
+
+        .tracker-dot.completed {
+            background: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .collapsible-section {
+            margin-top: 20px;
+        }
+
+        .collapse-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #999;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .collapse-btn:hover {
+            border-color: #666;
+            color: #fff;
+        }
+
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .collapse-content.expanded {
+            max-height: 1000px;
         }
 
         .timer-display-container {
@@ -1023,9 +1164,23 @@
             if (workout.type === 'circuit') {
                 const radius = 92;
                 const circumference = 2 * Math.PI * radius;
+                const currentEx = workout.exercises[currentExercise];
+                const nextEx = currentExercise < workout.exercises.length - 1 ? workout.exercises[currentExercise + 1] : null;
 
                 html += `
                     <div class="timer-section">
+                        <div class="current-exercise-display" id="currentExerciseDisplay">
+                            <div class="exercise-progress">Exercise ${currentExercise + 1} of ${workout.exercises.length}</div>
+                            <div class="current-exercise-name">${currentEx.name}</div>
+                            <div class="current-exercise-details">${currentEx.details}</div>
+                            ${nextEx ? `
+                                <div class="next-up-display">
+                                    <div class="next-up-label">Next Up</div>
+                                    <div class="next-up-name">${nextEx.name}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+
                         <div class="phase-indicator">
                             <span id="currentPhase">WORK</span> • Round <span id="currentRound">1</span>/${workout.rounds}
                         </div>
@@ -1044,6 +1199,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="exercise-tracker">
+                            <div class="tracker-dots" id="trackerDots">
+                                ${workout.exercises.map((ex, idx) => {
+                                    const exerciseKey = `${currentDay}-${idx}`;
+                                    const isCompleted = completedExercises[exerciseKey] || false;
+                                    const isActive = idx === currentExercise;
+                                    return `<div class="tracker-dot ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"
+                                            onclick="jumpToExercise(${idx})" title="${ex.name}"></div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
                         <div class="timer-controls">
                             <button class="timer-btn primary" onclick="toggleTimer()" id="playPauseBtn">
                                 <span>▶ Start</span>
@@ -1065,16 +1233,30 @@
                 `;
             }
 
+            html += `<div class="collapsible-section">`;
+
             if (workout.warmup) {
                 html += `
-                    <div class="section-title">🔥 Warm-up (5 min)</div>
-                    <div class="warmup-list">
-                        ${workout.warmup.map(item => `<p>${item}</p>`).join('')}
+                    <button class="collapse-btn" onclick="toggleCollapse(this)">
+                        <span>🔥 Warm-up (5 min)</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="collapse-content">
+                        <div class="warmup-list" style="margin-top: 10px;">
+                            ${workout.warmup.map(item => `<p>${item}</p>`).join('')}
+                        </div>
                     </div>
                 `;
             }
 
-            html += `<div class="section-title">💪 Exercises</div><div class="exercise-list">`;
+            html += `
+                <button class="collapse-btn" onclick="toggleCollapse(this)" style="margin-top: ${workout.warmup ? '10px' : '0'};">
+                    <span>💪 All Exercises (${workout.exercises.length})</span>
+                    <span>▼</span>
+                </button>
+                <div class="collapse-content">
+                    <div class="exercise-list" style="margin-top: 10px;">
+            `;
 
             workout.exercises.forEach((exercise, index) => {
                 const exerciseKey = `${currentDay}-${index}`;
@@ -1097,7 +1279,7 @@
                 `;
             });
 
-            html += `</div>`;
+            html += `</div></div></div>`;
 
             if (workout.cooldown) {
                 html += `
@@ -1298,6 +1480,39 @@
         }
 
         function updateExerciseHighlight() {
+            const workout = workoutData[currentDay];
+            if (!workout || !workout.exercises) return;
+
+            // Update current exercise display
+            const currentExDisplay = document.getElementById('currentExerciseDisplay');
+            if (currentExDisplay) {
+                const currentEx = workout.exercises[currentExercise];
+                const nextEx = currentExercise < workout.exercises.length - 1 ? workout.exercises[currentExercise + 1] : null;
+
+                currentExDisplay.innerHTML = `
+                    <div class="exercise-progress">Exercise ${currentExercise + 1} of ${workout.exercises.length}</div>
+                    <div class="current-exercise-name">${currentEx.name}</div>
+                    <div class="current-exercise-details">${currentEx.details}</div>
+                    ${nextEx ? `
+                        <div class="next-up-display">
+                            <div class="next-up-label">Next Up</div>
+                            <div class="next-up-name">${nextEx.name}</div>
+                        </div>
+                    ` : '<div class="next-up-display"><div class="next-up-name" style="color: #4CAF50;">Last Exercise! 💪</div></div>'}
+                `;
+            }
+
+            // Update tracker dots
+            const dots = document.querySelectorAll('.tracker-dot');
+            dots.forEach((dot, index) => {
+                const exerciseKey = `${currentDay}-${index}`;
+                const isCompleted = completedExercises[exerciseKey] || false;
+                dot.className = 'tracker-dot';
+                if (index === currentExercise) dot.classList.add('active');
+                if (isCompleted) dot.classList.add('completed');
+            });
+
+            // Update exercise list items
             const items = document.querySelectorAll('.exercise-item');
             items.forEach((item, index) => {
                 item.classList.toggle('active', index === currentExercise);
@@ -1306,6 +1521,37 @@
             const activeExercise = document.getElementById(`exercise-${currentExercise}`);
             if (activeExercise) {
                 activeExercise.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function jumpToExercise(index) {
+            const workout = workoutData[currentDay];
+            if (!workout || !workout.exercises || index < 0 || index >= workout.exercises.length) return;
+
+            currentExercise = index;
+            updateExerciseHighlight();
+
+            if (isRunning || isPaused) {
+                stopTimer();
+                currentTime = isWorkPhase ? workout.workTime : workout.restTime;
+                totalTime = currentTime;
+                updateTimerDisplay();
+            }
+
+            playBeep(600, 100);
+            saveState();
+        }
+
+        function toggleCollapse(button) {
+            const content = button.nextElementSibling;
+            const arrow = button.querySelector('span:last-child');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('expanded');
+                arrow.textContent = '▲';
             }
         }
 
@@ -1321,7 +1567,16 @@
             localStorage.setItem('completedExercises', JSON.stringify(completedExercises));
 
             const exerciseElement = document.getElementById(`exercise-${index}`);
-            exerciseElement.classList.toggle('completed');
+            if (exerciseElement) {
+                exerciseElement.classList.toggle('completed');
+            }
+
+            // Update tracker dots
+            const dots = document.querySelectorAll('.tracker-dot');
+            if (dots[index]) {
+                dots[index].classList.toggle('completed', completedExercises[exerciseKey]);
+            }
+
             playBeep(700, 80);
             updateStats();
         }
