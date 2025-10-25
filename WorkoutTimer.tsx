@@ -127,75 +127,153 @@ const WorkoutTimer = () => {
 
   const exercise = workouts[workoutType][currentExercise];
 
+  // Get next exercise info
+  const getNextExercise = () => {
+    if (workoutStyle === 'circuit') {
+      if (currentExercise === workouts[workoutType].length - 1) {
+        if (currentRound === 4) return null;
+        return { exercise: workouts[workoutType][0], round: currentRound + 1 };
+      }
+      return { exercise: workouts[workoutType][currentExercise + 1], round: currentRound };
+    } else {
+      if (currentRound === 4) {
+        if (currentExercise === workouts[workoutType].length - 1) return null;
+        return { exercise: workouts[workoutType][currentExercise + 1], round: 1 };
+      }
+      return { exercise: workouts[workoutType][currentExercise], round: currentRound + 1 };
+    }
+  };
+
+  const nextExerciseInfo = getNextExercise();
+
   return (
-    <div className="p-4 max-w-md mx-auto bg-white rounded-xl shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <select 
-          className="p-2 border rounded"
-          value={workoutType}
-          onChange={(e) => {
-            setWorkoutType(e.target.value);
-            resetWorkout();
-          }}
-        >
-          <option value="beach">Beach Muscles</option>
-          <option value="back">Back & Legs</option>
-        </select>
-        <select
-          className="p-2 border rounded"
-          value={workoutStyle}
-          onChange={(e) => {
-            setWorkoutStyle(e.target.value);
-            resetWorkout();
-          }}
-        >
-          <option value="circuit">Circuit (All Exercises)</option>
-          <option value="individual">Individual (4x Each)</option>
-        </select>
-      </div>
-
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">{exercise.name}</h2>
-        <div className="text-gray-600 mb-1">Reps: {exercise.reps}</div>
-        <div className="text-gray-600">Band: {exercise.band}</div>
-      </div>
-
-      <div className="text-center mb-8">
-        <div className="text-5xl font-bold mb-2">
-          {isResting ? seconds : "GO!"}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header Controls */}
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <select
+              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={workoutType}
+              onChange={(e) => {
+                setWorkoutType(e.target.value);
+                resetWorkout();
+              }}
+            >
+              <option value="beach">Beach Muscles</option>
+              <option value="back">Back & Legs</option>
+            </select>
+            <select
+              className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={workoutStyle}
+              onChange={(e) => {
+                setWorkoutStyle(e.target.value);
+                resetWorkout();
+              }}
+            >
+              <option value="circuit">Circuit (All Exercises)</option>
+              <option value="individual">Individual (4x Each)</option>
+            </select>
+          </div>
         </div>
-        <div className="text-gray-600">
-          {isResting ? "Rest Time" : "Work Time"}
+
+        {/* Main Timer Card */}
+        <div className="bg-white rounded-xl shadow-xl p-8 mb-4">
+          {/* Progress Bar */}
+          <div className="mb-6">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Round {currentRound} of 4</span>
+              <span>Exercise {currentExercise + 1} of {workouts[workoutType].length}</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${((currentRound - 1) * workouts[workoutType].length + currentExercise + 1) / (4 * workouts[workoutType].length) * 100}%`
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Current Exercise Display */}
+          <div className="text-center mb-6">
+            <div className="text-sm text-gray-500 uppercase tracking-wide mb-2">
+              {isResting ? "Rest Period" : "Current Exercise"}
+            </div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-4">{exercise.name}</h1>
+            <div className="flex justify-center gap-6 text-lg">
+              <div className="bg-blue-50 px-4 py-2 rounded-lg">
+                <span className="text-gray-600">Reps:</span>{' '}
+                <span className="font-semibold text-blue-700">{exercise.reps}</span>
+              </div>
+              <div className="bg-purple-50 px-4 py-2 rounded-lg">
+                <span className="text-gray-600">Band:</span>{' '}
+                <span className="font-semibold text-purple-700">{exercise.band}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Timer Display */}
+          <div className="text-center mb-8">
+            <div className={`text-8xl font-bold mb-2 ${isResting ? 'text-orange-500' : 'text-green-500'}`}>
+              {isResting ? seconds : "GO!"}
+            </div>
+            <div className={`text-xl font-medium ${isResting ? 'text-orange-600' : 'text-green-600'}`}>
+              {isResting ? "Rest Time" : "Work Time"}
+            </div>
+          </div>
+
+          {/* Control Buttons */}
+          <div className="flex justify-center gap-3 mb-6">
+            <button
+              onClick={toggleTimer}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 shadow-lg transition-all"
+            >
+              <Timer className="w-5 h-5" />
+              {isActive ? "Stop" : "Start"}
+            </button>
+            <button
+              onClick={resetWorkout}
+              className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2 shadow-lg transition-all"
+            >
+              <RotateCcw className="w-5 h-5" />
+              Reset
+            </button>
+            <button
+              onClick={nextExercise}
+              className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2 shadow-lg transition-all"
+            >
+              <SkipForward className="w-5 h-5" />
+              Next
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="flex justify-center gap-4 mb-6">
-        <button
-          onClick={toggleTimer}
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2"
-        >
-          <Timer className="w-5 h-5" />
-          {isActive ? "Stop" : "Start"}
-        </button>
-        <button
-          onClick={resetWorkout}
-          className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2"
-        >
-          <RotateCcw className="w-5 h-5" />
-          Reset
-        </button>
-        <button
-          onClick={nextExercise}
-          className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
-        >
-          <SkipForward className="w-5 h-5" />
-          Next
-        </button>
-      </div>
+        {/* Next Up Card */}
+        {nextExerciseInfo && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="text-sm text-gray-500 uppercase tracking-wide mb-3">
+              Next Up - Round {nextExerciseInfo.round}
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800">{nextExerciseInfo.exercise.name}</h3>
+                <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                  <span>Reps: {nextExerciseInfo.exercise.reps}</span>
+                  <span>Band: {nextExerciseInfo.exercise.band}</span>
+                </div>
+              </div>
+              <div className="text-3xl text-gray-300">→</div>
+            </div>
+          </div>
+        )}
 
-      <div className="text-center text-gray-600">
-        <div>Round {currentRound} of 4</div>
-        <div>Exercise {currentExercise + 1} of {workouts[workoutType].length}</div>
+        {!nextExerciseInfo && isActive && (
+          <div className="bg-green-50 border-2 border-green-200 rounded-xl shadow-lg p-6 text-center">
+            <div className="text-2xl font-bold text-green-700">Last Exercise!</div>
+            <div className="text-green-600 mt-2">Finish strong!</div>
+          </div>
+        )}
       </div>
     </div>
   );
