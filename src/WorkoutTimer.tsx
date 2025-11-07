@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Timer, Settings, RotateCcw, SkipForward } from 'lucide-react';
+import { Timer, RotateCcw, SkipForward } from 'lucide-react';
 
 const WorkoutTimer = () => {
-  const [workoutType, setWorkoutType] = useState('beach');
+  const [workoutType, setWorkoutType] = useState<'beach' | 'back'>('beach');
   const [currentExercise, setCurrentExercise] = useState(0);
   const [currentRound, setCurrentRound] = useState(1);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [isResting, setIsResting] = useState(false);
-  const [workoutStyle, setWorkoutStyle] = useState('circuit');
+  const [workoutStyle, setWorkoutStyle] = useState<'circuit' | 'individual'>('circuit');
 
   const workouts = {
     beach: [
@@ -130,11 +130,11 @@ const WorkoutTimer = () => {
   return (
     <div className="p-4 max-w-md mx-auto bg-white rounded-xl shadow-lg">
       <div className="flex justify-between items-center mb-6">
-        <select 
+        <select
           className="p-2 border rounded"
           value={workoutType}
           onChange={(e) => {
-            setWorkoutType(e.target.value);
+            setWorkoutType(e.target.value as 'beach' | 'back');
             resetWorkout();
           }}
         >
@@ -145,7 +145,7 @@ const WorkoutTimer = () => {
           className="p-2 border rounded"
           value={workoutStyle}
           onChange={(e) => {
-            setWorkoutStyle(e.target.value);
+            setWorkoutStyle(e.target.value as 'circuit' | 'individual');
             resetWorkout();
           }}
         >
