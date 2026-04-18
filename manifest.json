@@ -1,0 +1,41 @@
+{
+  "name": "Fight Club Workout Timer",
+  "short_name": "Fight Club",
+  "description": "Mobile-optimized workout timer with circuit training, HIIT, and progress tracking",
+  "start_url": "./fight-club.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#0a0a0a",
+  "categories": ["fitness", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Today's Workout",
+      "short_name": "Workout",
+      "description": "Jump straight into today's workout",
+      "url": "./fight-club.html",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
