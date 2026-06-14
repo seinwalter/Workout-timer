@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RAW DAWG">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="RAW DAWG — a no-excuses life tracker for quitting addictions, building habits, and running streaks.">
+    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22RAW%20DAWG%20Life%20Tracker%22%2C%22short_name%22%3A%22RAW%20DAWG%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230a0a0a%22%2C%22theme_color%22%3A%22%230a0a0a%22%7D">
+    <title>RAW DAWG — Life Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        :root {
+            --bg0: #0a0a0a;
+            --bg1: #141417;
+            --card: #16161b;
+            --card2: #1d1d24;
+            --line: #2a2a31;
+            --text: #f4f4f5;
+            --muted: #8a8a93;
+            --fire1: #ff7a18;
+            --fire2: #ffb347;
+            --danger: #ff4d4d;
+            --good: #34c759;
+        }
+
+        html { -webkit-text-size-adjust: 100%; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(120% 100% at 50% 0%, #18181d 0%, var(--bg0) 55%);
+            background-attachment: fixed;
+            color: var(--text);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            touch-action: manipulation;
+            padding:
+                env(safe-area-inset-top) env(safe-area-inset-right)
+                calc(env(safe-area-inset-bottom) + 90px) env(safe-area-inset-left);
+        }
+
+        .wrap { max-width: 540px; margin: 0 auto; padding: 16px 14px 0; }
+
+        /* ---------- Header ---------- */
+        .header { text-align: center; padding: 8px 0 14px; position: relative; }
+        .header h1 {
+            font-size: 2.1rem; font-weight: 900; letter-spacing: 1px;
+            background: linear-gradient(135deg, var(--fire1), var(--fire2));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header .tag { font-size: .72rem; color: var(--muted); letter-spacing: 3px; font-weight: 700; margin-top: 2px; }
+        .gear {
+            position: absolute; right: 0; top: 4px; background: none; border: none;
+            color: var(--muted); font-size: 1.5rem; width: 44px; height: 44px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: transform .25s;
+        }
+        .gear:active { transform: rotate(60deg); color: var(--fire2); }
+
+        /* ---------- Summary stats ---------- */
+        .summary {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 18px;
+        }
+        .stat {
+            background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+            padding: 12px 6px; text-align: center;
+        }
+        .stat b { display: block; font-size: 1.45rem; font-weight: 800; line-height: 1; }
+        .stat span { display: block; font-size: .62rem; color: var(--muted); margin-top: 5px; letter-spacing: .5px; text-transform: uppercase; }
+
+        /* ---------- Cards ---------- */
+        .list { display: flex; flex-direction: column; gap: 14px; }
+
+        .card {
+            background: linear-gradient(180deg, var(--card2), var(--card));
+            border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 14px;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--accent, var(--fire1));
+        }
+        .card-top { display: flex; align-items: center; gap: 12px; }
+        .icon {
+            width: 46px; height: 46px; border-radius: 13px; flex: 0 0 auto;
+            background: color-mix(in srgb, var(--accent, var(--fire1)) 18%, transparent);
+            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            border: 1px solid color-mix(in srgb, var(--accent, var(--fire1)) 35%, transparent);
+        }
+        .card-head { flex: 1; min-width: 0; }
+        .card-head .name { font-weight: 800; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-head .cat { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+        .info-btn {
+            background: none; border: 1px solid var(--line); color: var(--muted);
+            width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer; flex: 0 0 auto;
+        }
+        .info-btn:active { color: var(--fire2); border-color: var(--fire2); }
+
+        .streak { text-align: center; padding: 14px 0 8px; }
+        .streak .big {
+            font-size: 3.4rem; font-weight: 900; line-height: .9;
+            color: var(--accent, var(--fire2)); font-variant-numeric: tabular-nums;
+        }
+        .streak .unit { font-size: .7rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
+        .streak .clock {
+            font-size: 1rem; color: var(--text); font-variant-numeric: tabular-nums;
+            margin-top: 8px; opacity: .85; font-weight: 600; letter-spacing: 1px;
+        }
+
+        .progress { margin: 6px 2px 12px; }
+        .progress .ptop { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); margin-bottom: 6px; }
+        .progress .ptop b { color: var(--text); font-weight: 700; }
+        .bar { background: #0e0e12; border-radius: 7px; height: 8px; overflow: hidden; border: 1px solid var(--line); }
+        .fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--accent, var(--fire1)), color-mix(in srgb, var(--accent, var(--fire1)) 40%, #fff)); transition: width .6s ease; }
+
+        .ministats { display: flex; gap: 8px; margin-bottom: 14px; }
+        .ministats .m { flex: 1; background: #0f0f13; border: 1px solid var(--line); border-radius: 11px; padding: 9px 4px; text-align: center; }
+        .ministats .m b { display: block; font-size: .95rem; font-weight: 800; }
+        .ministats .m span { display: block; font-size: .58rem; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+
+        .actions { display: flex; gap: 10px; }
+        .btn {
+            flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 800;
+            font-size: .9rem; cursor: pointer; letter-spacing: .3px; transition: transform .08s, filter .2s;
+        }
+        .btn:active { transform: scale(.97); }
+        .btn-danger { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); }
+        .btn-good { background: linear-gradient(135deg, var(--accent, var(--fire1)), color-mix(in srgb, var(--accent, var(--fire1)) 55%, #fff)); color: #111; }
+        .btn-done { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent); }
+        .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); flex: 0 0 auto; width: 48px; }
+
+        /* ---------- Add button (floating) ---------- */
+        .fab {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: calc(env(safe-area-inset-bottom) + 18px);
+            background: linear-gradient(135deg, var(--fire1), var(--fire2)); color: #111;
+            border: none; padding: 15px 30px; border-radius: 30px; font-size: 1rem; font-weight: 900;
+            letter-spacing: .5px; cursor: pointer; box-shadow: 0 8px 26px rgba(255,122,24,.4); z-index: 50;
+        }
+        .fab:active { transform: translateX(-50%) scale(.96); }
+
+        /* ---------- Empty state ---------- */
+        .empty { text-align: center; padding: 30px 10px; }
+        .empty .em { font-size: 3rem; }
+        .empty h2 { margin: 12px 0 6px; font-size: 1.2rem; }
+        .empty p { color: var(--muted); font-size: .9rem; margin-bottom: 18px; }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .chip {
+            background: var(--card2); border: 1px solid var(--line); color: var(--text);
+            padding: 9px 14px; border-radius: 20px; font-size: .85rem; font-weight: 600; cursor: pointer;
+        }
+        .chip:active { border-color: var(--fire2); }
+
+        /* ---------- Modal ---------- */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+            display: none; align-items: flex-end; justify-content: center; z-index: 100;
+        }
+        .overlay.show { display: flex; }
+        .sheet {
+            background: var(--bg1); border: 1px solid var(--line); border-bottom: none;
+            border-radius: 22px 22px 0 0; width: 100%; max-width: 540px;
+            max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 20px 18px calc(env(safe-area-inset-bottom) + 26px);
+            animation: up .25s ease;
+        }
+        @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-grab { width: 40px; height: 4px; background: var(--line); border-radius: 4px; margin: 0 auto 16px; }
+        .sheet h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
+        .sheet .sub { color: var(--muted); font-size: .85rem; margin-bottom: 18px; }
+
+        label.f { display: block; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 14px 0 6px; font-weight: 700; }
+        input.f, textarea.f, select.f {
+            width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--text);
+            border-radius: 12px; padding: 13px; font-size: 1rem; font-family: inherit;
+        }
+        input.f:focus, textarea.f:focus, select.f:focus { outline: none; border-color: var(--fire1); }
+        textarea.f { resize: vertical; min-height: 60px; }
+        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .preset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .preset {
+            background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+            padding: 10px 4px; text-align: center; cursor: pointer;
+        }
+        .preset.sel { border-color: var(--fire1); background: color-mix(in srgb, var(--fire1) 14%, var(--card)); }
+        .preset .pi { font-size: 1.5rem; }
+        .preset .pn { font-size: .58rem; color: var(--muted); margin-top: 4px; line-height: 1.1; }
+
+        .type-toggle { display: flex; gap: 8px; }
+        .type-opt { flex: 1; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: .85rem; }
+        .type-opt.sel { border-color: var(--fire1); background: color-mix(in srgb, var(--fire1) 14%, var(--card)); color: var(--text); font-weight: 700; }
+        .type-opt small { display: block; color: var(--muted); font-size: .65rem; margin-top: 3px; font-weight: 400; }
+
+        .save-btn {
+            width: 100%; margin-top: 22px; padding: 15px; border: none; border-radius: 13px;
+            background: linear-gradient(135deg, var(--fire1), var(--fire2)); color: #111;
+            font-size: 1.05rem; font-weight: 900; cursor: pointer;
+        }
+        .save-btn:active { transform: scale(.98); }
+        .text-btn { width: 100%; margin-top: 12px; padding: 12px; background: none; border: none; color: var(--muted); font-size: .9rem; cursor: pointer; }
+        .text-btn.del { color: var(--danger); }
+
+        /* ---------- Details / info ---------- */
+        .why { background: var(--card); border: 1px solid var(--line); border-radius: 13px; padding: 14px; font-size: .92rem; line-height: 1.5; margin-bottom: 16px; }
+        .why b { color: var(--fire2); }
+        .tl { position: relative; margin-left: 8px; padding-left: 20px; border-left: 2px solid var(--line); }
+        .tl-item { position: relative; padding-bottom: 16px; }
+        .tl-item::before { content: ''; position: absolute; left: -27px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg1); border: 2px solid var(--muted); }
+        .tl-item.hit::before { background: var(--good); border-color: var(--good); }
+        .tl-item .when { font-weight: 800; font-size: .9rem; }
+        .tl-item .what { color: var(--muted); font-size: .85rem; margin-top: 2px; line-height: 1.4; }
+        .sec-title { font-size: .72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 700; margin: 20px 0 10px; }
+        .tips li { margin: 0 0 8px 18px; font-size: .9rem; line-height: 1.45; }
+        .hist-item { display: flex; justify-content: space-between; font-size: .85rem; padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--muted); }
+        .disclaimer { font-size: .72rem; color: var(--muted); margin-top: 18px; line-height: 1.4; opacity: .8; }
+
+        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+        .toggle-row .tl-label b { display: block; font-size: .95rem; }
+        .toggle-row .tl-label span { display: block; font-size: .75rem; color: var(--muted); margin-top: 2px; }
+        .switch { position: relative; width: 50px; height: 30px; flex: 0 0 auto; }
+        .switch input { display: none; }
+        .switch .sl { position: absolute; inset: 0; background: var(--card2); border: 1px solid var(--line); border-radius: 30px; transition: .2s; }
+        .switch .sl::before { content: ''; position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); top: 3px; left: 3px; transition: .2s; }
+        .switch input:checked + .sl { background: color-mix(in srgb, var(--good) 30%, transparent); border-color: var(--good); }
+        .switch input:checked + .sl::before { transform: translateX(20px); background: var(--good); }
+
+        .toast {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            bottom: calc(env(safe-area-inset-bottom) + 90px);
+            background: var(--card2); border: 1px solid var(--fire1); color: var(--text);
+            padding: 12px 18px; border-radius: 12px; font-size: .9rem; font-weight: 600;
+            z-index: 200; opacity: 0; transition: opacity .25s, transform .25s; pointer-events: none;
+            max-width: 90%; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="header">
+            <h1>RAW DAWG</h1>
+            <div class="tag">LIFE TRACKER · NO EXCUSES</div>
+            <button class="gear" data-action="settings" aria-label="Settings">⚙</button>
+        </div>
+        <div class="summary" id="summary"></div>
+        <div id="list" class="list"></div>
+    </div>
+
+    <button class="fab" data-action="add">＋ NEW TRACKER</button>
+
+    <div class="overlay" id="overlay"></div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+    /* ============================================================
+       RAW DAWG — single-file habit / addiction streak tracker (PWA)
+       Pure vanilla JS, persists to localStorage. No build step.
+       ============================================================ */
+
+    const STORAGE_KEY = 'rawdawg.v1';
+    const DAY = 86400000, HOUR = 3600000, MIN = 60000;
+
+    /* ---------- Milestones ---------- */
+    const QUIT_MS = [
+        [HOUR,'1 Hour'],[6*HOUR,'6 Hours'],[12*HOUR,'12 Hours'],
+        [DAY,'1 Day'],[2*DAY,'2 Days'],[3*DAY,'3 Days'],[5*DAY,'5 Days'],
+        [7*DAY,'1 Week'],[14*DAY,'2 Weeks'],[21*DAY,'3 Weeks'],
+        [30*DAY,'1 Month'],[60*DAY,'2 Months'],[90*DAY,'3 Months'],
+        [180*DAY,'6 Months'],[270*DAY,'9 Months'],[365*DAY,'1 Year'],
+        [547*DAY,'18 Months'],[730*DAY,'2 Years'],[1095*DAY,'3 Years']
+    ];
+    const BUILD_DAYS = [1,3,7,14,21,30,50,75,100,150,200,300,365,500,750,1000];
+
+    /* ---------- Presets + knowledge base ---------- */
+    const PRESETS = [
+        { key:'weed', name:'No Weed', icon:'🌿', color:'#4caf50', type:'quit', cat:'Substance',
+          why:'Sharper memory, real motivation, deeper sleep, fatter wallet, healthier lungs.',
+          timeline:[
+            ['1–2 Days','Cravings, irritability and appetite shifts kick in.'],
+            ['3–7 Days','Vivid dreams return as REM sleep rebounds; mood swings peak.'],
+            ['2–4 Weeks','Mental fog clears, motivation and focus start climbing.'],
+            ['1–3 Months','Memory, energy and finances visibly recover.'],
+            ['3 Months+','Lungs and baseline mood settle into the clear-headed you.']],
+          tips:['Toss the gear and dodge the people/places tied to using.','Slam cardio when a craving spikes — it burns the urge fast.','Keep hands busy and hydrate hard the first week.'] },
+
+        { key:'alcohol', name:'No Alcohol', icon:'🍺', color:'#f0a020', type:'quit', cat:'Substance',
+          why:'Better sleep, clearer skin, weight loss, sharper mind, money saved.',
+          timeline:[
+            ['12–24 Hours','Cravings begin; heavy drinkers may feel shaky.'],
+            ['2–3 Days','Acute withdrawal window — get medical help if you drank daily/heavily.'],
+            ['1 Week','Sleep deepens, hydration and skin improve.'],
+            ['2–4 Weeks','Liver fat drops, energy and mood lift, weight starts falling.'],
+            ['3 Months+','Blood pressure, liver and immune function bounce back.']],
+          tips:['Have a go-to non-alcoholic drink ready for every situation.','Plan around social triggers before they hit.','Heavy daily drinker? Detox under medical supervision — it can be dangerous.'] },
+
+        { key:'nicotine', name:'No Nicotine', icon:'🚬', color:'#78909c', type:'quit', cat:'Substance',
+          why:'Lungs, circulation, taste, smell, money and years of life back.',
+          timeline:[
+            ['20 Min','Heart rate and blood pressure start dropping.'],
+            ['12 Hours','Carbon monoxide in blood returns to normal.'],
+            ['2–3 Days','Nicotine fully out; cravings peak, then ease.'],
+            ['2–12 Weeks','Circulation and lung function climb noticeably.'],
+            ['1 Year','Heart-disease risk is cut roughly in half.']],
+          tips:['Ride the wave — most cravings pass in 3–5 minutes.','Swap the hand-to-mouth habit (gum, water, toothpick).','Avoid the first one — there is no "just one".'] },
+
+        { key:'gaming', name:'No Call of Duty', icon:'🎮', color:'#7c4dff', type:'quit', cat:'Gaming',
+          why:'Reclaim hours, chase real goals, fix sleep, rebuild relationships.',
+          timeline:[
+            ['1–3 Days','Boredom and urges hit hardest; expect restlessness.'],
+            ['1 Week','Suddenly you have hours back — fill them on purpose.'],
+            ['2–4 Weeks','Sleep, focus and real-world progress improve.'],
+            ['1–3 Months','New habits replace the dopamine loop.'],
+            ['3 Months+','Gaming loses its grip; you run your time, not the game.']],
+          tips:['Uninstall it / hand off the console. Friction is your friend.','Pre-plan what the freed-up hours go toward.','Replace the social side with real plans or a co-op hobby.'] },
+
+        { key:'screen', name:'Screen Detox', icon:'📱', color:'#29b6f6', type:'quit', cat:'Digital',
+          why:'Attention span, real focus, presence, better sleep — unplug and breathe.',
+          timeline:[
+            ['Day 1','Phantom reaches for the phone all day. Notice them.'],
+            ['3 Days','The itch to check fades; boredom turns into ideas.'],
+            ['1 Week','Attention span and patience start to stretch back out.'],
+            ['2–4 Weeks','Deep focus returns; sleep and mood improve.'],
+            ['1 Month+','You use the phone as a tool, not a reflex.']],
+          tips:['Grayscale the screen and kill non-essential notifications.','No phone in the bedroom — buy a real alarm clock.','Set hard app limits; keep the phone in another room while you work.'] },
+
+        { key:'porn', name:'No Porn', icon:'🚫', color:'#ef5350', type:'quit', cat:'Habit',
+          why:'More energy, motivation, confidence and real-world drive.',
+          timeline:[
+            ['1–5 Days','Urges spike; this is the hardest stretch — stay busy.'],
+            ['1–2 Weeks','Mood and energy often swing as the brain recalibrates.'],
+            ['2–4 Weeks','Focus, confidence and motivation tend to climb.'],
+            ['1–3 Months','Dopamine sensitivity rebalances toward real life.'],
+            ['3 Months+','New baseline — drive redirected outward.']],
+          tips:['Install a content blocker before willpower is tested.','Never get bored and alone with a device — break that combo.','When the urge hits, change rooms and move your body.'] },
+
+        { key:'sugar', name:'No Sugar', icon:'🍩', color:'#ff7043', type:'quit', cat:'Diet',
+          why:'Stable energy, less inflammation, clearer skin, easier fat loss.',
+          timeline:[
+            ['1–3 Days','Cravings and energy dips as the body adjusts.'],
+            ['1 Week','Taste buds reset — fruit starts tasting sweet again.'],
+            ['2–4 Weeks','Stable energy, fewer crashes, less bloating.'],
+            ['1 Month+','Skin, weight and inflammation markers improve.']],
+          tips:['Clear the house of the easy stuff.','Eat enough protein and fat so you are never starving.','Keep fruit or nuts on hand for the craving hour.'] },
+
+        { key:'caffeine', name:'No Caffeine', icon:'☕', color:'#8d6e63', type:'quit', cat:'Substance',
+          why:'Calmer baseline, deeper sleep, no afternoon crashes, less anxiety.',
+          timeline:[
+            ['12–24 Hours','Headache and fatigue as adenosine rebounds.'],
+            ['2–3 Days','Withdrawal peaks — push fluids and rest.'],
+            ['1 Week','Energy stabilizes without the spikes and crashes.'],
+            ['2 Weeks+','Deeper sleep, calmer nervous system.']],
+          tips:['Taper instead of going cold turkey to dodge the headache.','Hydrate — a lot of "tired" is just dehydration.','Swap the ritual: herbal tea or a short walk.'] },
+
+        { key:'junkfood', name:'No Junk Food', icon:'🍔', color:'#ffa726', type:'quit', cat:'Diet',
+          why:'Fat loss, steady energy, better digestion, sharper mind.',
+          timeline:[
+            ['1–3 Days','Cravings for salt/sugar/fat are loudest now.'],
+            ['1 Week','Palate resets; whole food tastes better.'],
+            ['2–4 Weeks','Digestion, energy and weight trend the right way.'],
+            ['1 Month+','Cooking real food becomes the default.']],
+          tips:['Meal-prep so the easy choice is the good choice.','Do not shop hungry.','Allow one planned treat so you never feel deprived.'] },
+
+        { key:'beard', name:'Beard Growth', icon:'🧔', color:'#c0894e', type:'quit', cat:'Grooming',
+          why:'Track every day you let it grow. No shaving, no trimming — just send it.',
+          timeline:[
+            ['1 Week','Stubble fills in; the itchy phase begins.'],
+            ['2–3 Weeks','Past the itch — patchy spots start connecting.'],
+            ['1 Month','A real short beard takes shape.'],
+            ['2–3 Months','Full coverage; time to start shaping the neckline.'],
+            ['6 Months+','Yeard territory — proper length and density.']],
+          tips:['Push through the itch — it ends around week 2–3.','Wash and condition it; brush daily to train direction.','Resist trimming early; patches usually fill with time.'] },
+
+        { key:'gym', name:'Gym / Workout', icon:'💪', color:'#ff5252', type:'build', cat:'Fitness',
+          why:'Strength, energy, mood, discipline. Check in every day you train.',
+          timeline:[
+            ['1 Week','Showing up is the win — habit forming.'],
+            ['3 Weeks','Movements feel smoother; routine locks in.'],
+            ['1–2 Months','Visible strength and conditioning gains.'],
+            ['3 Months+','It is part of who you are now.']],
+          tips:['Lower the bar: never miss two days in a row.','Lay out gear the night before.','Track sessions — consistency beats intensity.'] },
+
+        { key:'reading', name:'Read Daily', icon:'📚', color:'#26a69a', type:'build', cat:'Mind',
+          why:'Focus, knowledge, calm. A few pages a day compounds hard.',
+          timeline:[
+            ['1 Week','10 pages a day feels automatic.'],
+            ['1 Month','You have finished a book — attention span growing.'],
+            ['3 Months','Multiple books deep; default to a book over a screen.']],
+          tips:['Keep the book where the phone usually is.','Even one page counts — protect the streak.','Read before bed instead of scrolling.'] },
+
+        { key:'meditate', name:'Meditate', icon:'🧘', color:'#ab47bc', type:'build', cat:'Mind',
+          why:'Calm, focus, emotional control. Sit daily, even for a minute.',
+          timeline:[
+            ['1 Week','Sitting still gets easier; you notice the noise.'],
+            ['3 Weeks','Habit forms; small dips in reactivity.'],
+            ['1–3 Months','Calmer baseline, sharper attention.']],
+          tips:['Same time, same spot every day.','Start with 2 minutes — tiny and unbreakable.','Missed a day? Restart without the guilt spiral.'] },
+
+        { key:'cold', name:'Cold Shower', icon:'🚿', color:'#42a5f5', type:'build', cat:'Discipline',
+          why:'Discipline on demand, alertness, resilience, mood boost.',
+          timeline:[
+            ['1 Week','The dread is the point — you face it daily.'],
+            ['3 Weeks','Cold becomes bearable, even energizing.'],
+            ['1 Month+','Voluntary hard thing = mental armor for the day.']],
+          tips:['Start warm, finish on full cold for 30s.','Control the breath — slow exhales.','Do it first thing so the day starts with a win.'] },
+
+        { key:'custom', name:'Custom', icon:'⭐', color:'#ff7a18', type:'quit', cat:'Custom',
+          why:'Your rules, your streak. Define what winning looks like.',
+          timeline:[], tips:['Make the goal specific and binary — clear win or reset.','Stack it onto an existing daily anchor.','Track the streak where you will see it every day.'] }
+    ];
+    const presetByKey = k => PRESETS.find(p => p.key === k) || PRESETS[PRESETS.length-1];
+
+    /* ---------- State ---------- */
+    let state = load();
+    function load() {
+        try {
+            const s = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            if (s && s.habits) return s;
+        } catch (e) {}
+        return { habits: [], settings: { notifications: false, sound: true } };
+    }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+    /* ---------- Date / streak helpers ---------- */
+    function localKey(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    const todayKey = () => localKey(new Date());
+
+    // current streak length in ms for a quit-type habit
+    function quitMs(h) { return Math.max(0, Date.now() - new Date(h.startDate).getTime()); }
+
+    // boundaries of every streak segment: created -> relapses... -> now
+    function segments(h) {
+        const bounds = [new Date(h.createdDate).getTime(), ...(h.relapses || []).map(r => new Date(r.date).getTime())]
+            .sort((a, b) => a - b);
+        const segs = [];
+        for (let i = 0; i < bounds.length; i++) {
+            const end = (i + 1 < bounds.length) ? bounds[i + 1] : Date.now();
+            segs.push(end - bounds[i]);
+        }
+        return segs;
+    }
+    function bestMs(h) { return Math.max(0, ...segments(h)); }
+
+    // consecutive-day streak for a build-type habit
+    function buildStreak(h) {
+        const set = new Set(h.checkIns || []);
+        let d = new Date(); d.setHours(0,0,0,0);
+        if (!set.has(localKey(d))) { d.setDate(d.getDate()-1); if (!set.has(localKey(d))) return 0; }
+        let n = 0;
+        while (set.has(localKey(d))) { n++; d.setDate(d.getDate()-1); }
+        return n;
+    }
+    function bestBuildStreak(h) {
+        const days = (h.checkIns || []).slice().sort();
+        let best = 0, run = 0, prev = null;
+        for (const k of days) {
+            const cur = new Date(k + 'T00:00:00').getTime();
+            if (prev !== null && cur - prev === DAY) run++; else run = 1;
+            best = Math.max(best, run); prev = cur;
+        }
+        return best;
+    }
+
+    function achievedQuit(ms) { return QUIT_MS.filter(m => ms >= m[0]); }
+    function nextQuit(ms) { return QUIT_MS.find(m => ms < m[0]) || null; }
+    function achievedBuildCount(days) { return BUILD_DAYS.filter(d => days >= d).length; }
+    function nextBuild(days) { return BUILD_DAYS.find(d => days < d) || null; }
+
+    /* ---------- Formatting ---------- */
+    function fmtClock(ms) {
+        const h = Math.floor((ms % DAY) / HOUR), m = Math.floor((ms % HOUR) / MIN), s = Math.floor((ms % MIN) / 1000);
+        const p = n => String(n).padStart(2, '0');
+        return p(h) + ':' + p(m) + ':' + p(s);
+    }
+    function fmtMoney(n) {
+        if (n >= 1000) return '$' + (n/1000).toFixed(n >= 10000 ? 0 : 1) + 'k';
+        return '$' + Math.round(n);
+    }
+    function fmtHours(h) {
+        if (h >= 24) return Math.round(h/24) + 'd';
+        return Math.round(h) + 'h';
+    }
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+    /* ============================================================
+       RENDER
+       ============================================================ */
+    function render() {
+        renderSummary();
+        renderList();
+    }
+
+    function renderSummary() {
+        const el = document.getElementById('summary');
+        if (!state.habits.length) { el.style.display = 'none'; return; }
+        el.style.display = 'grid';
+        let active = state.habits.length, longest = 0, reclaimed = 0;
+        for (const h of state.habits) {
+            if (h.type === 'build') {
+                const d = buildStreak(h);
+                longest = Math.max(longest, d); reclaimed += d;
+            } else {
+                const d = quitMs(h) / DAY;
+                longest = Math.max(longest, d); reclaimed += d;
+            }
+        }
+        el.innerHTML =
+            stat(active, 'Trackers') +
+            stat(Math.floor(longest), 'Best Run · Days') +
+            stat(Math.floor(reclaimed), 'Days Logged');
+    }
+    const stat = (b, s) => `<div class="stat"><b>${b}</b><span>${esc(s)}</span></div>`;
+
+    function renderList() {
+        const el = document.getElementById('list');
+        if (!state.habits.length) { el.innerHTML = emptyState(); return; }
+        el.innerHTML = state.habits.map(card).join('');
+    }
+
+    function emptyState() {
+        const quick = ['weed','gaming','screen','beard','gym','nicotine'];
+        return `<div class="empty">
+            <div class="em">🔥</div>
+            <h2>Start your first streak</h2>
+            <p>Quit something. Build something. Track every day raw.</p>
+            <div class="chips">
+                ${quick.map(k => { const p = presetByKey(k); return `<button class="chip" data-action="quick-add" data-preset="${k}">${p.icon} ${esc(p.name)}</button>`; }).join('')}
+            </div>
+        </div>`;
+    }
+
+    function card(h) {
+        const accent = h.color || '#ff7a18';
+        if (h.type === 'build') return buildCard(h, accent);
+        return quitCard(h, accent);
+    }
+
+    function quitCard(h, accent) {
+        const ms = quitMs(h);
+        const days = Math.floor(ms / DAY);
+        const big = days >= 1 ? days : Math.floor(ms / HOUR);
+        const unit = days >= 1 ? (days === 1 ? 'DAY CLEAN' : 'DAYS CLEAN') : 'HOURS CLEAN';
+        const best = Math.max(bestMs(h), ms);
+        const relapses = (h.relapses || []).length;
+
+        // progress toward goal (if set) else next milestone
+        let pct, ptxt;
+        if (h.goalDays) {
+            pct = Math.min(100, (ms / (h.goalDays * DAY)) * 100);
+            ptxt = `${days} / ${h.goalDays} day goal`;
+        } else {
+            const nx = nextQuit(ms);
+            if (nx) { pct = (ms / nx[0]) * 100; ptxt = `Next: ${nx[1]}`; }
+            else { pct = 100; ptxt = 'Legend status'; }
+        }
+
+        const mini = [];
+        mini.push(miniStat(Math.floor(best / DAY) + 'd', 'Best'));
+        mini.push(miniStat(relapses, 'Resets'));
+        if (h.costPerDay) mini.push(miniStat(fmtMoney(h.costPerDay * (ms / DAY)), 'Saved'));
+        else if (h.hoursPerDay) mini.push(miniStat(fmtHours(h.hoursPerDay * (ms / DAY)), 'Reclaimed'));
+
+        return `<div class="card" style="--accent:${accent}">
+            ${cardTop(h)}
+            <div class="streak">
+                <div class="big" data-id="${h.id}" data-kind="big">${big}</div>
+                <div class="unit">${unit}</div>
+                <div class="clock" data-id="${h.id}" data-kind="clock">${fmtClock(ms)}</div>
+            </div>
+            ${progress(pct, ptxt, Math.round(pct))}
+            <div class="ministats">${mini.join('')}</div>
+            <div class="actions">
+                <button class="btn btn-danger" data-action="relapse" data-id="${h.id}">✕ Relapse / Reset</button>
+            </div>
+        </div>`;
+    }
+
+    function buildCard(h, accent) {
+        const streak = buildStreak(h);
+        const done = (h.checkIns || []).includes(todayKey());
+        const best = Math.max(bestBuildStreak(h), streak);
+        const total = (h.checkIns || []).length;
+
+        let pct, ptxt;
+        if (h.goalDays) { pct = Math.min(100, (streak / h.goalDays) * 100); ptxt = `${streak} / ${h.goalDays} day goal`; }
+        else { const nx = nextBuild(streak); if (nx) { pct = (streak / nx) * 100; ptxt = `Next: ${nx} days`; } else { pct = 100; ptxt = 'Unstoppable'; } }
+
+        return `<div class="card" style="--accent:${accent}">
+            ${cardTop(h)}
+            <div class="streak">
+                <div class="big">${streak}</div>
+                <div class="unit">${streak === 1 ? 'DAY STREAK' : 'DAY STREAK'}</div>
+                <div class="clock">${done ? '✓ Done today' : 'Not yet today'}</div>
+            </div>
+            ${progress(pct, ptxt, Math.round(pct))}
+            <div class="ministats">${miniStat(best, 'Best')}${miniStat(total, 'Total Days')}</div>
+            <div class="actions">
+                ${done
+                    ? `<button class="btn btn-done" data-action="uncheck" data-id="${h.id}">✓ Done — undo</button>`
+                    : `<button class="btn btn-good" data-action="checkin" data-id="${h.id}">✓ Check in today</button>`}
+            </div>
+        </div>`;
+    }
+
+    function cardTop(h) {
+        return `<div class="card-top">
+            <div class="icon">${h.icon || '⭐'}</div>
+            <div class="card-head">
+                <div class="name">${esc(h.name)}</div>
+                <div class="cat">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build' : 'Quit'}</div>
+            </div>
+            <button class="info-btn" data-action="details" data-id="${h.id}" aria-label="Details">ⓘ</button>
+        </div>`;
+    }
+    const miniStat = (b, s) => `<div class="m"><b>${b}</b><span>${esc(s)}</span></div>`;
+    const progress = (pct, txt, n) => `<div class="progress">
+        <div class="ptop"><span>${esc(txt)}</span><b>${n}%</b></div>
+        <div class="bar"><div class="fill" style="width:${Math.max(2, Math.min(100, pct))}%"></div></div>
+    </div>`;
+
+    /* ============================================================
+       LIVE TICK — update quit counters + milestone + reminders
+       ============================================================ */
+    let lastMinute = '';
+    function tick() {
+        let dirty = false;
+        for (const h of state.habits) {
+            if (h.type !== 'quit') continue;
+            const ms = quitMs(h);
+            const big = document.querySelector(`.big[data-id="${h.id}"][data-kind="big"]`);
+            const clk = document.querySelector(`.clock[data-id="${h.id}"][data-kind="clock"]`);
+            if (clk) clk.textContent = fmtClock(ms);
+            if (big) {
+                const days = Math.floor(ms / DAY);
+                big.textContent = days >= 1 ? days : Math.floor(ms / HOUR);
+            }
+            // milestone celebration
+            const hitCount = achievedQuit(ms).length;
+            if (h._lastMilestone == null) { h._lastMilestone = hitCount; dirty = true; } // baseline; don't fire retroactively
+            else if (hitCount > h._lastMilestone) {
+                h._lastMilestone = hitCount; dirty = true;
+                const m = achievedQuit(ms)[hitCount - 1];
+                celebrate(h, m ? m[1] : 'milestone');
+            }
+        }
+        // reminders (checked once per minute)
+        const now = new Date();
+        const cur = localKey(now) + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+        const hm = cur.slice(11);
+        if (cur !== lastMinute) {
+            lastMinute = cur;
+            for (const h of state.habits) {
+                if (!h.reminderTime || h.reminderTime !== hm) continue;
+                if (h._lastReminder === todayKey()) continue;
+                h._lastReminder = todayKey(); dirty = true;
+                const body = h.type === 'build'
+                    ? `Check in for "${h.name}" and keep the streak alive.`
+                    : `Stay strong — keep your "${h.name}" streak going.`;
+                notify('🔥 RAW DAWG', body);
+            }
+        }
+        if (dirty) save();
+    }
+
+    function celebrate(h, label) {
+        beep(660, 90); setTimeout(() => beep(880, 140), 110);
+        toast(`🔥 ${h.name}: ${label} hit!`);
+        notify(`🔥 Milestone: ${label}`, `"${h.name}" just hit ${label}. Keep it raw.`);
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+    }
+
+    /* ============================================================
+       ACTIONS
+       ============================================================ */
+    function relapse(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>Reset "${esc(h.name)}"?</h2>
+            <p class="sub">This logs a relapse and restarts the clock from now. Your best streak is kept.</p>
+            <label class="f">What happened? (optional)</label>
+            <input class="f" id="relapseNote" placeholder="Trigger, mood, lesson...">
+            <button class="save-btn" style="background:linear-gradient(135deg,#ff4d4d,#ff7a7a)" data-action="confirm-relapse" data-id="${id}">Yes, reset the streak</button>
+            <button class="text-btn" data-action="close">Never mind — stay strong</button>
+        `);
+    }
+    function confirmRelapse(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        const note = (document.getElementById('relapseNote') || {}).value || '';
+        h.relapses = h.relapses || [];
+        h.relapses.push({ date: new Date().toISOString(), note: note.trim() });
+        h.startDate = new Date().toISOString();
+        h._lastMilestone = 0;
+        save(); closeSheet(); render();
+        toast('Streak reset. Day one starts now. 💪');
+        if (navigator.vibrate) navigator.vibrate(60);
+    }
+
+    function checkIn(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        h.checkIns = h.checkIns || [];
+        const k = todayKey();
+        if (!h.checkIns.includes(k)) h.checkIns.push(k);
+        const streak = buildStreak(h);
+        save(); render();
+        beep(720, 80); if (navigator.vibrate) navigator.vibrate(30);
+        if (BUILD_DAYS.includes(streak)) celebrate(h, streak + ' days');
+        else toast('✓ Checked in. Streak: ' + streak);
+    }
+    function uncheck(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        const k = todayKey();
+        h.checkIns = (h.checkIns || []).filter(x => x !== k);
+        save(); render();
+    }
+
+    function deleteHabit(id) {
+        state.habits = state.habits.filter(x => x.id !== id);
+        save(); closeSheet(); render();
+        toast('Tracker deleted.');
+    }
+
+    /* ============================================================
+       ADD / EDIT FORM
+       ============================================================ */
+    let draft = null;
+
+    function openForm(habit) {
+        if (habit) {
+            draft = { ...habit, editing: true };
+            if (habit.startDate) draft.startLocal = isoToLocal(habit.startDate);
+        } else {
+            const p = presetByKey('custom');
+            draft = { preset: 'custom', name: '', icon: p.icon, color: p.color, type: p.type, cat: p.cat,
+                      goalDays: '', costPerDay: '', hoursPerDay: '', reminderTime: '', startNow: true };
+        }
+        renderForm();
+    }
+    function selectPreset(key) {
+        const p = presetByKey(key);
+        draft.preset = key; draft.name = p.name === 'Custom' ? '' : p.name;
+        draft.icon = p.icon; draft.color = p.color; draft.type = p.type; draft.cat = p.cat;
+        renderForm(true);
+    }
+    function renderForm(keepValues) {
+        if (keepValues) syncDraftFromInputs();
+        const isBuild = draft.type === 'build';
+        const html = `
+            <div class="sheet-grab"></div>
+            <h2>${draft.editing ? 'Edit tracker' : 'New tracker'}</h2>
+            <p class="sub">${draft.editing ? 'Update the details below.' : 'Pick a starting point or go custom.'}</p>
+
+            ${draft.editing ? '' : `
+            <label class="f">Quick start</label>
+            <div class="preset-grid">
+                ${PRESETS.map(p => `<div class="preset ${draft.preset===p.key?'sel':''}" data-action="select-preset" data-preset="${p.key}">
+                    <div class="pi">${p.icon}</div><div class="pn">${esc(p.name)}</div></div>`).join('')}
+            </div>`}
+
+            <label class="f">Name</label>
+            <input class="f" id="fName" value="${esc(draft.name)}" placeholder="e.g. No Weed">
+
+            <div class="row2">
+                <div>
+                    <label class="f">Emoji</label>
+                    <input class="f" id="fIcon" value="${esc(draft.icon)}" maxlength="2" style="text-align:center;font-size:1.4rem">
+                </div>
+                <div>
+                    <label class="f">Color</label>
+                    <input class="f" id="fColor" type="color" value="${draft.color}" style="height:50px;padding:4px">
+                </div>
+            </div>
+
+            <label class="f">Type</label>
+            <div class="type-toggle">
+                <div class="type-opt ${!isBuild?'sel':''}" data-action="set-type" data-type="quit">QUIT<small>Time since last slip</small></div>
+                <div class="type-opt ${isBuild?'sel':''}" data-action="set-type" data-type="build">BUILD<small>Daily check-in streak</small></div>
+            </div>
+
+            <label class="f">Goal — target days (optional)</label>
+            <input class="f" id="fGoal" type="number" inputmode="numeric" value="${esc(draft.goalDays)}" placeholder="e.g. 30, 90, 365">
+
+            ${isBuild ? '' : `
+            <div class="row2">
+                <div>
+                    <label class="f">$ per day (optional)</label>
+                    <input class="f" id="fCost" type="number" inputmode="decimal" value="${esc(draft.costPerDay)}" placeholder="money saved">
+                </div>
+                <div>
+                    <label class="f">Hours/day (optional)</label>
+                    <input class="f" id="fHours" type="number" inputmode="decimal" value="${esc(draft.hoursPerDay)}" placeholder="time reclaimed">
+                </div>
+            </div>
+            <label class="f">When did this streak start?</label>
+            <input class="f" id="fStart" type="datetime-local" value="${draft.startLocal || nowLocal()}">`}
+
+            <label class="f">Daily reminder (optional)</label>
+            <input class="f" id="fReminder" type="time" value="${esc(draft.reminderTime)}">
+
+            <button class="save-btn" data-action="save-habit">${draft.editing ? 'Save changes' : 'Start tracking 🔥'}</button>
+            ${draft.editing ? `<button class="text-btn del" data-action="delete" data-id="${draft.id}">Delete this tracker</button>` : ''}
+            <button class="text-btn" data-action="close">Cancel</button>
+        `;
+        openSheet(html);
+    }
+    function nowLocal() { return isoToLocal(new Date().toISOString()); }
+    function isoToLocal(iso) {
+        const d = new Date(iso); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 16);
+    }
+    function syncDraftFromInputs() {
+        const g = id => (document.getElementById(id) || {}).value;
+        if (g('fName') != null) draft.name = g('fName');
+        if (g('fIcon') != null) draft.icon = g('fIcon');
+        if (g('fColor') != null) draft.color = g('fColor');
+        if (g('fGoal') != null) draft.goalDays = g('fGoal');
+        if (g('fCost') != null) draft.costPerDay = g('fCost');
+        if (g('fHours') != null) draft.hoursPerDay = g('fHours');
+        if (g('fReminder') != null) draft.reminderTime = g('fReminder');
+        if (g('fStart') != null) draft.startLocal = g('fStart');
+    }
+    function setType(t) { syncDraftFromInputs(); draft.type = t; renderForm(); }
+
+    function saveHabit() {
+        syncDraftFromInputs();
+        const name = (draft.name || '').trim();
+        if (!name) { toast('Give it a name first.'); return; }
+        const common = {
+            name, icon: (draft.icon || '⭐').trim() || '⭐', color: draft.color || '#ff7a18',
+            type: draft.type, cat: draft.cat || 'Custom', preset: draft.preset || (draft.editing ? draft.preset : 'custom'),
+            goalDays: parseInt(draft.goalDays) || 0,
+            costPerDay: parseFloat(draft.costPerDay) || 0,
+            hoursPerDay: parseFloat(draft.hoursPerDay) || 0,
+            reminderTime: draft.reminderTime || ''
+        };
+        if (draft.editing) {
+            const h = state.habits.find(x => x.id === draft.id);
+            Object.assign(h, common);
+            if (h.type === 'quit' && draft.startLocal) {
+                h.startDate = new Date(draft.startLocal).toISOString();
+                h._lastMilestone = achievedQuit(quitMs(h)).length; // rebaseline, don't spam past milestones
+            }
+        } else {
+            const startDate = (draft.type !== 'build' && draft.startLocal)
+                ? new Date(draft.startLocal).toISOString() : new Date().toISOString();
+            state.habits.push({
+                id: uid(), createdDate: startDate, startDate,
+                relapses: [], checkIns: [], _lastMilestone: 0, ...common
+            });
+        }
+        save(); closeSheet(); render();
+        toast(draft.editing ? 'Saved.' : 'Tracker started. Stay raw. 🔥');
+        maybeAskNotifications();
+    }
+
+    /* ============================================================
+       DETAILS / INFO MODAL
+       ============================================================ */
+    function openDetails(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        const p = presetByKey(h.preset || 'custom');
+        let body = '';
+
+        if (h.type === 'build') {
+            const streak = buildStreak(h), best = Math.max(bestBuildStreak(h), streak);
+            body += statsBlock([['Current', streak + 'd'], ['Best', best + 'd'], ['Total', (h.checkIns||[]).length + 'd']]);
+        } else {
+            const ms = quitMs(h), best = Math.max(bestMs(h), ms);
+            const sav = [];
+            if (h.costPerDay) sav.push(['Saved', fmtMoney(h.costPerDay * ms / DAY)]);
+            if (h.hoursPerDay) sav.push(['Reclaimed', fmtHours(h.hoursPerDay * ms / DAY)]);
+            body += statsBlock([['Current', Math.floor(ms/DAY) + 'd'], ['Best', Math.floor(best/DAY) + 'd'], ['Resets', (h.relapses||[]).length], ...sav]);
+        }
+
+        if (p.why) body += `<div class="why">${esc(p.why)}</div>`;
+
+        // milestone timeline
+        if (p.timeline && p.timeline.length) {
+            const ms = h.type === 'build' ? buildStreak(h) * DAY : quitMs(h);
+            body += `<div class="sec-title">What's happening</div><div class="tl">` +
+                p.timeline.map(([when, what], i) => {
+                    // rough "hit" heuristic: first item ~ when streak past index threshold isn't exact; mark by elapsed days vs typical
+                    const hit = ms >= thresholdForIndex(p.timeline.length, i);
+                    return `<div class="tl-item ${hit?'hit':''}"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div></div>`;
+                }).join('') + `</div>`;
+        }
+
+        // milestones list
+        body += `<div class="sec-title">Milestones</div>` + milestoneList(h);
+
+        // history
+        if (h.type !== 'build' && (h.relapses||[]).length) {
+            body += `<div class="sec-title">Reset history</div>`;
+            body += h.relapses.slice().reverse().slice(0, 8).map(r =>
+                `<div class="hist-item"><span>${new Date(r.date).toLocaleDateString()}</span><span>${esc(r.note || '—')}</span></div>`).join('');
+        }
+
+        if (p.tips && p.tips.length) {
+            body += `<div class="sec-title">Stay-strong tips</div><ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+        }
+
+        if (h.cat === 'Substance') body += `<div class="disclaimer">Info is general and motivational — not medical advice. Heavy alcohol or other physical dependence can make withdrawal dangerous; talk to a doctor.</div>`;
+
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>${h.icon} ${esc(h.name)}</h2>
+            <p class="sub">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build habit' : 'Quit / abstain'}</p>
+            ${body}
+            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="edit" data-id="${h.id}">Edit tracker</button>
+            <button class="text-btn" data-action="close">Close</button>
+        `);
+    }
+    function thresholdForIndex(len, i) {
+        // map timeline position to an elapsed-ms checkpoint so earlier items light up first
+        const checkpoints = [0, DAY, 5*DAY, 21*DAY, 60*DAY, 180*DAY, 365*DAY];
+        return checkpoints[Math.min(i, checkpoints.length - 1)];
+    }
+    function statsBlock(pairs) {
+        return `<div class="ministats" style="margin:6px 0 4px">` +
+            pairs.map(([s, b]) => `<div class="m"><b>${b}</b><span>${esc(s)}</span></div>`).join('') + `</div>`;
+    }
+    function milestoneList(h) {
+        if (h.type === 'build') {
+            const d = buildStreak(h);
+            return BUILD_DAYS.map(x => `<div class="hist-item"><span>${x >= d ? '◻' : '✅'} ${x} days</span><span>${x <= d ? 'done' : (x - d) + ' to go'}</span></div>`).join('');
+        }
+        const ms = quitMs(h);
+        return QUIT_MS.map(([t, l]) => `<div class="hist-item"><span>${ms >= t ? '✅' : '◻'} ${l}</span><span>${ms >= t ? 'done' : ''}</span></div>`).join('');
+    }
+
+    /* ============================================================
+       SETTINGS
+       ============================================================ */
+    function openSettings() {
+        const s = state.settings;
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>Settings</h2>
+            <p class="sub">RAW DAWG runs entirely on your phone. Your data stays in this browser.</p>
+
+            <div class="toggle-row">
+                <div class="tl-label"><b>Notifications</b><span>Milestone + reminder alerts (while app is open)</span></div>
+                <label class="switch"><input type="checkbox" id="setNotif" ${s.notifications?'checked':''} data-action="toggle-notif"><span class="sl"></span></label>
+            </div>
+            <div class="toggle-row">
+                <div class="tl-label"><b>Sound</b><span>Beeps on check-ins and milestones</span></div>
+                <label class="switch"><input type="checkbox" id="setSound" ${s.sound?'checked':''} data-action="toggle-sound"><span class="sl"></span></label>
+            </div>
+
+            <div class="sec-title">Your data</div>
+            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="export">Export / back up data</button>
+            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line);margin-top:10px" data-action="import">Import data</button>
+            <button class="text-btn del" data-action="reset-all">Erase everything</button>
+
+            <div class="disclaimer">
+                <b>Install on iPhone:</b> tap the Share button in Safari → "Add to Home Screen" to run RAW DAWG full-screen like an app. Reminders fire while the app is open; iOS limits background alerts for home-screen web apps.
+            </div>
+            <button class="text-btn" data-action="close">Done</button>
+        `);
+    }
+
+    function exportData() {
+        const txt = JSON.stringify(state, null, 2);
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Backup copied to clipboard.'), () => fallbackDownload(txt));
+        else fallbackDownload(txt);
+    }
+    function fallbackDownload(txt) {
+        const a = document.createElement('a');
+        a.href = 'data:application/json,' + encodeURIComponent(txt);
+        a.download = 'rawdawg-backup.json'; a.click();
+        toast('Backup downloaded.');
+    }
+    function importData() {
+        const txt = prompt('Paste your RAW DAWG backup JSON:');
+        if (!txt) return;
+        try {
+            const obj = JSON.parse(txt);
+            if (!obj.habits) throw 0;
+            state = obj; if (!state.settings) state.settings = { notifications: false, sound: true };
+            save(); closeSheet(); render(); toast('Data restored. 🔥');
+        } catch (e) { toast('That did not look like a valid backup.'); }
+    }
+    function resetAll() {
+        if (!confirm('Erase ALL trackers and history? This cannot be undone.')) return;
+        state = { habits: [], settings: state.settings };
+        save(); closeSheet(); render(); toast('Wiped clean.');
+    }
+
+    /* ============================================================
+       NOTIFICATIONS + SOUND
+       ============================================================ */
+    function maybeAskNotifications() {
+        if (state.settings.notifications && 'Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }
+    function notify(title, body) {
+        if (!state.settings.notifications) return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        try { new Notification(title, { body }); } catch (e) {}
+    }
+    let audioCtx = null;
+    function beep(freq = 800, dur = 100) {
+        if (!state.settings.sound) return;
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = freq; o.type = 'sine';
+            g.gain.setValueAtTime(0.18, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur / 1000);
+            o.start(); o.stop(audioCtx.currentTime + dur / 1000);
+        } catch (e) {}
+    }
+
+    /* ============================================================
+       MODAL + TOAST PLUMBING
+       ============================================================ */
+    const overlay = document.getElementById('overlay');
+    function openSheet(html) {
+        overlay.innerHTML = `<div class="sheet">${html}</div>`;
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeSheet() {
+        overlay.classList.remove('show'); overlay.innerHTML = '';
+        document.body.style.overflow = '';
+    }
+    // only close when the backdrop itself is tapped, so in-sheet clicks still
+    // bubble to the document-level action delegation below
+    overlay.addEventListener('click', e => { if (e.target === overlay) closeSheet(); });
+
+    let toastTimer = null;
+    function toast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+    }
+
+    /* ============================================================
+       EVENT DELEGATION
+       ============================================================ */
+    document.addEventListener('click', e => {
+        const el = e.target.closest('[data-action]'); if (!el) return;
+        const id = el.getAttribute('data-id');
+        const action = el.getAttribute('data-action');
+        switch (action) {
+            case 'add': openForm(); break;
+            case 'quick-add': openForm(); selectPreset(el.dataset.preset); break;
+            case 'settings': openSettings(); break;
+            case 'details': openDetails(id); break;
+            case 'edit': openForm(state.habits.find(x => x.id === id)); break;
+            case 'delete': deleteHabit(id); break;
+            case 'relapse': relapse(id); break;
+            case 'confirm-relapse': confirmRelapse(id); break;
+            case 'checkin': checkIn(id); break;
+            case 'uncheck': uncheck(id); break;
+            case 'select-preset': selectPreset(el.dataset.preset); break;
+            case 'set-type': setType(el.dataset.type); break;
+            case 'save-habit': saveHabit(); break;
+            case 'close': closeSheet(); break;
+            case 'export': exportData(); break;
+            case 'import': importData(); break;
+            case 'reset-all': resetAll(); break;
+            case 'toggle-notif':
+                state.settings.notifications = el.checked; save();
+                if (el.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+                break;
+            case 'toggle-sound': state.settings.sound = el.checked; save(); if (el.checked) beep(700, 80); break;
+        }
+    });
+
+    /* ============================================================
+       INIT
+       ============================================================ */
+    render();
+    tick();
+    setInterval(tick, 1000);
+    // re-render daily-changing build cards when returning to the app
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+    </script>
+</body>
+</html>
