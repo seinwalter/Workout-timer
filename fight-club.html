@@ -1302,10 +1302,6 @@
                 <div class="stat-label">Streak</div>
             </div>
         </div>
-
-        <a href="raw-dawg.html" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0 4px;padding:14px;border:1px solid #333;border-radius:12px;background:rgba(255,107,107,0.06);color:#ff6b6b;text-decoration:none;font-weight:700;font-size:0.9rem;letter-spacing:0.3px;">
-            🔥 RAW DAWG — Life Tracker →
-        </a>
     </div>
 
     <!-- Settings Modal -->
@@ -1352,7 +1348,20 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        // Import Capacitor for native features
+        import { Haptics, ImpactStyle } from 'https://cdn.jsdelivr.net/npm/@capacitor/haptics@6.0.0/dist/esm/index.js';
+        import { LocalNotifications } from 'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.1.0/dist/esm/index.js';
+
+        // Haptic feedback helper
+        async function haptic(style = ImpactStyle.Light) {
+            try {
+                await Haptics.impact({ style });
+            } catch (e) {
+                // Haptics not available in browser
+            }
+        }
+
         const workoutData = {
             1: {
                 title: "Upper Body KB",
@@ -1462,7 +1471,16 @@
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioContext();
 
-        function playBeep(frequency = 800, duration = 100) {
+        async function playBeep(frequency = 800, duration = 100) {
+            // Haptic feedback for important events
+            if (frequency >= 900) {
+                await haptic(ImpactStyle.Heavy); // Timer end, workout complete
+            } else if (frequency >= 700) {
+                await haptic(ImpactStyle.Medium); // Button press, exercise change
+            } else {
+                await haptic(ImpactStyle.Light); // Minor feedback
+            }
+
             if (!settings.sound) return;
 
             const oscillator = audioContext.createOscillator();
@@ -1481,18 +1499,39 @@
             oscillator.stop(audioContext.currentTime + duration / 1000);
         }
 
-        function showNotification(title, message) {
+        async function showNotification(title, message) {
             if (!settings.notifications) return;
 
-            // Browser notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: message,
-                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">💪</text></svg>'
-                });
+            // Native haptic feedback
+            await haptic(ImpactStyle.Medium);
+
+            // Try native notification first (Capacitor)
+            try {
+                const permission = await LocalNotifications.checkPermissions();
+                if (permission.display === 'granted' || permission.display === 'prompt') {
+                    if (permission.display === 'prompt') {
+                        await LocalNotifications.requestPermissions();
+                    }
+                    await LocalNotifications.schedule({
+                        notifications: [{
+                            title: title,
+                            body: message,
+                            id: Date.now(),
+                            smallIcon: 'ic_stat_icon_config_sample',
+                            iconColor: '#ff3b30',
+                            sound: undefined,
+                            attachments: undefined,
+                            actionTypeId: '',
+                            extra: null
+                        }]
+                    });
+                }
+            } catch (e) {
+                // Fallback to in-app notification if native fails
+                console.log('Native notification unavailable, using in-app');
             }
 
-            // In-app notification
+            // In-app notification (always show for immediate feedback)
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = `
@@ -1504,16 +1543,17 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
-
-            // Haptic feedback on mobile
-            if ('vibrate' in navigator) {
-                navigator.vibrate([100, 50, 100]);
-            }
         }
 
-        function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
+        async function requestNotificationPermission() {
+            // Request native notification permissions
+            try {
+                const permission = await LocalNotifications.checkPermissions();
+                if (permission.display === 'prompt') {
+                    await LocalNotifications.requestPermissions();
+                }
+            } catch (e) {
+                console.log('Notification permissions not available');
             }
         }
 
