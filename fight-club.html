@@ -1348,17 +1348,27 @@
         </div>
     </div>
 
-    <script type="module">
-        // Import Capacitor for native features
-        import { Haptics, ImpactStyle } from 'https://cdn.jsdelivr.net/npm/@capacitor/haptics@6.0.0/dist/esm/index.js';
-        import { LocalNotifications } from 'https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.1.0/dist/esm/index.js';
+    <script>
+        // Capacitor is available globally in native apps
+        const Capacitor = window.Capacitor || {};
+        const Haptics = Capacitor.Plugins?.Haptics;
+        const LocalNotifications = Capacitor.Plugins?.LocalNotifications;
+
+        // Haptic impact styles
+        const ImpactStyle = {
+            Heavy: 'HEAVY',
+            Medium: 'MEDIUM',
+            Light: 'LIGHT'
+        };
 
         // Haptic feedback helper
         async function haptic(style = ImpactStyle.Light) {
             try {
-                await Haptics.impact({ style });
+                if (Haptics) {
+                    await Haptics.impact({ style });
+                }
             } catch (e) {
-                // Haptics not available in browser
+                console.log('Haptics unavailable:', e);
             }
         }
 
@@ -1506,29 +1516,31 @@
             await haptic(ImpactStyle.Medium);
 
             // Try native notification first (Capacitor)
-            try {
-                const permission = await LocalNotifications.checkPermissions();
-                if (permission.display === 'granted' || permission.display === 'prompt') {
-                    if (permission.display === 'prompt') {
-                        await LocalNotifications.requestPermissions();
+            if (LocalNotifications) {
+                try {
+                    const permission = await LocalNotifications.checkPermissions();
+                    if (permission.display === 'granted' || permission.display === 'prompt') {
+                        if (permission.display === 'prompt') {
+                            await LocalNotifications.requestPermissions();
+                        }
+                        await LocalNotifications.schedule({
+                            notifications: [{
+                                title: title,
+                                body: message,
+                                id: Date.now(),
+                                smallIcon: 'ic_stat_icon_config_sample',
+                                iconColor: '#ff3b30',
+                                sound: undefined,
+                                attachments: undefined,
+                                actionTypeId: '',
+                                extra: null
+                            }]
+                        });
                     }
-                    await LocalNotifications.schedule({
-                        notifications: [{
-                            title: title,
-                            body: message,
-                            id: Date.now(),
-                            smallIcon: 'ic_stat_icon_config_sample',
-                            iconColor: '#ff3b30',
-                            sound: undefined,
-                            attachments: undefined,
-                            actionTypeId: '',
-                            extra: null
-                        }]
-                    });
+                } catch (e) {
+                    // Fallback to in-app notification if native fails
+                    console.log('Native notification unavailable, using in-app:', e);
                 }
-            } catch (e) {
-                // Fallback to in-app notification if native fails
-                console.log('Native notification unavailable, using in-app');
             }
 
             // In-app notification (always show for immediate feedback)
@@ -1547,13 +1559,15 @@
 
         async function requestNotificationPermission() {
             // Request native notification permissions
-            try {
-                const permission = await LocalNotifications.checkPermissions();
-                if (permission.display === 'prompt') {
-                    await LocalNotifications.requestPermissions();
+            if (LocalNotifications) {
+                try {
+                    const permission = await LocalNotifications.checkPermissions();
+                    if (permission.display === 'prompt') {
+                        await LocalNotifications.requestPermissions();
+                    }
+                } catch (e) {
+                    console.log('Notification permissions not available:', e);
                 }
-            } catch (e) {
-                console.log('Notification permissions not available');
             }
         }
 
