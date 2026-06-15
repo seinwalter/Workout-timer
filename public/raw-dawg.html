@@ -258,9 +258,44 @@
 
     <script>
     /* ============================================================
-       RAW DAWG — single-file habit / addiction streak tracker (PWA)
+       RAW DAWG — single-file habit / addiction streak tracker
        Pure vanilla JS, persists to localStorage. No build step.
+       Runs as a web PWA and as a native iOS app (via Capacitor).
        ============================================================ */
+
+    /* ---------- Native bridge (Capacitor) ----------
+       In the native iOS app these are provided by the global window.Capacitor
+       object (no ES6 imports — there is no bundler). On the plain web they are
+       undefined, and everything below falls back to standard web APIs. */
+    const Capacitor = window.Capacitor || {};
+    const Haptics = Capacitor.Plugins && Capacitor.Plugins.Haptics;
+    const LocalNotifications = Capacitor.Plugins && Capacitor.Plugins.LocalNotifications;
+    const isNative = !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    const ImpactStyle = { Heavy: 'HEAVY', Medium: 'MEDIUM', Light: 'LIGHT' };
+
+    // Haptic feedback — native impact engine on iOS, vibration fallback on web.
+    async function haptic(style = ImpactStyle.Light) {
+        try {
+            if (Haptics) { await Haptics.impact({ style }); return; }
+        } catch (e) {}
+        if (navigator.vibrate) {
+            navigator.vibrate(style === ImpactStyle.Heavy ? [40, 60, 40] : style === ImpactStyle.Medium ? 35 : 18);
+        }
+    }
+
+    // Ask for notification permission via native plugin if present, else web.
+    async function requestNotifPermission() {
+        if (LocalNotifications) {
+            try {
+                const p = await LocalNotifications.checkPermissions();
+                if (p.display !== 'granted') await LocalNotifications.requestPermissions();
+                return;
+            } catch (e) {}
+        }
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { Notification.requestPermission(); } catch (e) {}
+        }
+    }
 
     const STORAGE_KEY = 'rawdawg.v1';
     const DAY = 86400000, HOUR = 3600000, MIN = 60000;
@@ -673,7 +708,7 @@
         beep(660, 90); setTimeout(() => beep(880, 140), 110);
         toast(`🔥 ${h.name}: ${label} hit!`);
         notify(`🔥 Milestone: ${label}`, `"${h.name}" just hit ${label}. Keep it raw.`);
-        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        haptic(ImpactStyle.Heavy);
     }
 
     /* ============================================================
@@ -700,7 +735,7 @@
         h._lastMilestone = 0;
         save(); closeSheet(); render();
         toast('Streak reset. Day one starts now. 💪');
-        if (navigator.vibrate) navigator.vibrate(60);
+        haptic(ImpactStyle.Medium);
     }
 
     function checkIn(id) {
@@ -710,7 +745,7 @@
         if (!h.checkIns.includes(k)) h.checkIns.push(k);
         const streak = buildStreak(h);
         save(); render();
-        beep(720, 80); if (navigator.vibrate) navigator.vibrate(30);
+        beep(720, 80); haptic(ImpactStyle.Medium);
         if (BUILD_DAYS.includes(streak)) celebrate(h, streak + ' days');
         else toast('✓ Checked in. Streak: ' + streak);
     }
@@ -997,12 +1032,24 @@
        NOTIFICATIONS + SOUND
        ============================================================ */
     function maybeAskNotifications() {
-        if (state.settings.notifications && 'Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
+        if (state.settings.notifications) requestNotifPermission();
     }
-    function notify(title, body) {
+    async function notify(title, body) {
         if (!state.settings.notifications) return;
+        // Native iOS notification (Capacitor) first
+        if (LocalNotifications) {
+            try {
+                const p = await LocalNotifications.checkPermissions();
+                if (p.display === 'prompt') await LocalNotifications.requestPermissions();
+                if (p.display !== 'denied') {
+                    await LocalNotifications.schedule({
+                        notifications: [{ id: Date.now() % 2000000000, title, body, iconColor: '#ff7a18' }]
+                    });
+                    return;
+                }
+            } catch (e) { /* fall through to web */ }
+        }
+        // Web fallback
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try { new Notification(title, { body }); } catch (e) {}
     }
@@ -1050,6 +1097,7 @@
        ============================================================ */
     document.addEventListener('click', e => {
         const el = e.target.closest('[data-action]'); if (!el) return;
+        haptic(ImpactStyle.Light);
         const id = el.getAttribute('data-id');
         const action = el.getAttribute('data-action');
         switch (action) {
@@ -1072,7 +1120,7 @@
             case 'reset-all': resetAll(); break;
             case 'toggle-notif':
                 state.settings.notifications = el.checked; save();
-                if (el.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+                if (el.checked) requestNotifPermission();
                 break;
             case 'toggle-sound': state.settings.sound = el.checked; save(); if (el.checked) beep(700, 80); break;
         }

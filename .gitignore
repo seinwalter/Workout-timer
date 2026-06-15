@@ -21,3 +21,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Capacitor (native build output — regenerated on the Mac via setup-ios.sh)
+/ios
+/android
+.capacitor
+package-lock.json
