@@ -779,10 +779,12 @@
         renderForm();
     }
     function selectPreset(key) {
+        syncDraftFromInputs();                  // keep any goal/cost/hours/reminder already typed
         const p = presetByKey(key);
-        draft.preset = key; draft.name = p.name === 'Custom' ? '' : p.name;
+        draft.preset = key;
+        if (p.name !== 'Custom') draft.name = p.name;   // a preset fills the name; Custom keeps yours
         draft.icon = p.icon; draft.color = p.color; draft.type = p.type; draft.cat = p.cat;
-        renderForm(true);
+        renderForm();                           // render WITHOUT re-reading inputs, so preset values stick
     }
     function renderForm(keepValues) {
         if (keepValues) syncDraftFromInputs();
