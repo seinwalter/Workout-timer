@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.rawdawg.tracker',
+  appId: 'com.seinwalter.rawdawg',
   appName: 'RAW DAWG',
   webDir: 'www',
   server: {

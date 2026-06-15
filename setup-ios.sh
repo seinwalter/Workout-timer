@@ -38,6 +38,10 @@ if [ ! -d "ios" ]; then
   npx cap add ios
 fi
 
+# Generate the app icon + splash screens from assets/ into the iOS project
+echo "🎨 Generating app icon & splash screens..."
+npx capacitor-assets generate --ios
+
 echo "🔄 Syncing web assets into the iOS project..."
 npx cap sync
 

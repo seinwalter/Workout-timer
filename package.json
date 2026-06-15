@@ -13,8 +13,12 @@
     "@capacitor/local-notifications": "^6.1.0",
     "@capacitor/app": "^6.0.0"
   },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  },
   "scripts": {
     "cap:add:ios": "cap add ios",
+    "assets:generate": "capacitor-assets generate --ios",
     "cap:sync": "cap sync",
     "cap:copy": "cap copy",
     "cap:open:ios": "cap open ios"

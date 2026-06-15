@@ -51,10 +51,13 @@ Installs Capacitor core, the iOS platform, and the Haptics / Local Notifications
 mkdir -p www
 cp raw-dawg.html www/index.html
 npx cap add ios
+npx capacitor-assets generate --ios   # custom flame icon + splash from assets/
 npx cap sync
 ```
 
-This creates the `ios/` folder containing the Xcode project.
+This creates the `ios/` folder containing the Xcode project, and bakes the
+RAW DAWG app icon + launch screen into it (generated from `assets/icon.png`
+and `assets/splash*.png`).
 
 ### 3. Open in Xcode
 
@@ -72,7 +75,7 @@ In Xcode:
 4. Check **Automatically manage signing**
 5. Choose your **Team** (your Apple ID — click *Add Account* if it isn't listed)
 
-The Bundle Identifier defaults to `com.rawdawg.tracker` (set in `capacitor.config.ts`). If signing complains it's taken, change it slightly (e.g. `com.yourname.rawdawg`).
+The Bundle Identifier defaults to `com.seinwalter.rawdawg` (set in `capacitor.config.ts`). If signing complains it's taken, change it slightly (e.g. `com.seinwalter.rawdawg2`).
 
 > With a free Apple ID you can install on your own devices. Apps re-signed this way expire after 7 days — just rebuild from Xcode to reinstall.
 
@@ -114,6 +117,7 @@ npx cap open ios       # then press Cmd+R in Xcode
 
 - ✅ **Native iOS notifications** — milestone hits and daily reminders fire as real iOS notifications (Capacitor Local Notifications), with an automatic web fallback.
 - ✅ **Haptic feedback** — every tap is a light impact; relapse/check-in is medium; a milestone is a heavy buzz.
+- ✅ **Custom flame app icon + launch screen** — generated from `assets/icon.png` & `assets/splash*.png` by `@capacitor/assets` (regenerate any time with `npm run assets:generate`).
 - ✅ **Dark status bar + splash** themed to RAW DAWG (`#0a0a0a` / `#ff7a18`).
 - ✅ **Full offline support** — the entire app is a single self-contained HTML file.
 - ✅ **On-device storage** — all streaks persist in local storage.
