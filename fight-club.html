@@ -1523,17 +1523,19 @@
                         if (permission.display === 'prompt') {
                             await LocalNotifications.requestPermissions();
                         }
+
+                        // Schedule notification 1 second ahead so it works when app is backgrounded/locked
+                        const scheduleTime = new Date(Date.now() + 1000);
+
                         await LocalNotifications.schedule({
                             notifications: [{
                                 title: title,
                                 body: message,
                                 id: Date.now(),
+                                schedule: { at: scheduleTime },
+                                sound: 'default',
                                 smallIcon: 'ic_stat_icon_config_sample',
-                                iconColor: '#ff3b30',
-                                sound: undefined,
-                                attachments: undefined,
-                                actionTypeId: '',
-                                extra: null
+                                iconColor: '#ff3b30'
                             }]
                         });
                     }
@@ -1543,7 +1545,7 @@
                 }
             }
 
-            // In-app notification (always show for immediate feedback)
+            // In-app notification (always show for immediate feedback when app is open)
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = `
