@@ -7,6 +7,9 @@ set -e
 
 echo "🔥 Updating RAW DAWG iOS app..."
 
+echo "📦 Ensuring native plugins are installed (notifications, etc.)..."
+npm install
+
 echo "📋 Copying raw-dawg.html → www/index.html..."
 cp raw-dawg.html www/index.html
 

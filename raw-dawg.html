@@ -268,9 +268,17 @@
        object (no ES6 imports — there is no bundler). On the plain web they are
        undefined, and everything below falls back to standard web APIs. */
     const Capacitor = window.Capacitor || {};
-    const Haptics = Capacitor.Plugins && Capacitor.Plugins.Haptics;
-    const LocalNotifications = Capacitor.Plugins && Capacitor.Plugins.LocalNotifications;
     const isNative = !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    // Acquire a native plugin without a bundler: registerPlugin() proxies straight
+    // to the installed native plugin via the bridge; fall back to the Plugins map.
+    function nativePlugin(name) {
+        if (!isNative) return null;
+        try { if (Capacitor.registerPlugin) return Capacitor.registerPlugin(name); } catch (e) {}
+        return (Capacitor.Plugins && Capacitor.Plugins[name]) || null;
+    }
+    const Haptics = nativePlugin('Haptics');
+    const LocalNotifications = nativePlugin('LocalNotifications');
+    const AppPlugin = nativePlugin('App');
     const ImpactStyle = { Heavy: 'HEAVY', Medium: 'MEDIUM', Light: 'LIGHT' };
 
     // Haptic feedback — native impact engine on iOS, vibration fallback on web.
@@ -736,6 +744,7 @@
         save(); closeSheet(); render();
         toast('Streak reset. Day one starts now. 💪');
         haptic(ImpactStyle.Medium);
+        syncScheduledReminders();
     }
 
     function checkIn(id) {
@@ -760,6 +769,7 @@
         state.habits = state.habits.filter(x => x.id !== id);
         save(); closeSheet(); render();
         toast('Tracker deleted.');
+        syncScheduledReminders();
     }
 
     /* ============================================================
@@ -892,9 +902,12 @@
                 relapses: [], checkIns: [], _lastMilestone: 0, ...common
             });
         }
+        // If they set a daily reminder, turn notifications on so it actually fires.
+        if (common.reminderTime && !state.settings.notifications) state.settings.notifications = true;
         save(); closeSheet(); render();
         toast(draft.editing ? 'Saved.' : 'Tracker started. Stay raw. 🔥');
         maybeAskNotifications();
+        syncScheduledReminders();
     }
 
     /* ============================================================
@@ -983,7 +996,7 @@
             <p class="sub">RAW DAWG runs entirely on your phone. Your data stays in this browser.</p>
 
             <div class="toggle-row">
-                <div class="tl-label"><b>Notifications</b><span>Milestone + reminder alerts (while app is open)</span></div>
+                <div class="tl-label"><b>Notifications</b><span>Milestone + daily reminder alerts</span></div>
                 <label class="switch"><input type="checkbox" id="setNotif" ${s.notifications?'checked':''} data-action="toggle-notif"><span class="sl"></span></label>
             </div>
             <div class="toggle-row">
@@ -1021,13 +1034,13 @@
             const obj = JSON.parse(txt);
             if (!obj.habits) throw 0;
             state = obj; if (!state.settings) state.settings = { notifications: false, sound: true };
-            save(); closeSheet(); render(); toast('Data restored. 🔥');
+            save(); closeSheet(); render(); toast('Data restored. 🔥'); syncScheduledReminders();
         } catch (e) { toast('That did not look like a valid backup.'); }
     }
     function resetAll() {
         if (!confirm('Erase ALL trackers and history? This cannot be undone.')) return;
         state = { habits: [], settings: state.settings };
-        save(); closeSheet(); render(); toast('Wiped clean.');
+        save(); closeSheet(); render(); toast('Wiped clean.'); syncScheduledReminders();
     }
 
     /* ============================================================
@@ -1036,24 +1049,100 @@
     function maybeAskNotifications() {
         if (state.settings.notifications) requestNotifPermission();
     }
+    // In-app/web notification. On the native app we DON'T fire here — alerts are
+    // pre-scheduled at the OS level (see syncScheduledReminders) so they arrive even
+    // when the app is closed, and we'd otherwise double up.
     async function notify(title, body) {
-        if (!state.settings.notifications) return;
-        // Native iOS notification (Capacitor) first
-        if (LocalNotifications) {
-            try {
-                const p = await LocalNotifications.checkPermissions();
-                if (p.display === 'prompt') await LocalNotifications.requestPermissions();
-                if (p.display !== 'denied') {
-                    await LocalNotifications.schedule({
-                        notifications: [{ id: Date.now() % 2000000000, title, body, iconColor: '#ff7a18' }]
-                    });
-                    return;
-                }
-            } catch (e) { /* fall through to web */ }
-        }
-        // Web fallback
+        if (!state.settings.notifications || isNative) return;
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try { new Notification(title, { body }); } catch (e) {}
+    }
+
+    /* ----- OS-level scheduling (native only) -------------------------------------
+       Pre-schedules reminders + milestones with iOS so they fire when the app is
+       CLOSED. iOS keeps ~64 pending notifications, so we schedule the daily
+       reminders first, then fill the rest with the soonest upcoming milestones.
+       Re-run on every change, on launch, and on app resume to keep it fresh. */
+    const REMIND_ID = 100000;   // daily-reminder notification ids start here
+    const MILE_ID   = 200000;   // milestone notification ids start here
+    const MAX_SCHEDULED = 60;   // stay safely under the iOS 64-pending limit
+
+    async function notifPermitted() {
+        if (!LocalNotifications) return false;
+        try {
+            let p = await LocalNotifications.checkPermissions();
+            if (p.display === 'prompt' || p.display === 'prompt-with-rationale') {
+                p = await LocalNotifications.requestPermissions();
+            }
+            return p.display === 'granted';
+        } catch (e) { return false; }
+    }
+
+    async function clearOurScheduled() {
+        if (!LocalNotifications) return;
+        try {
+            const pending = await LocalNotifications.getPending();
+            const ours = ((pending && pending.notifications) || [])
+                .filter(n => n.id >= REMIND_ID)
+                .map(n => ({ id: n.id }));
+            if (ours.length) await LocalNotifications.cancel({ notifications: ours });
+        } catch (e) {}
+    }
+
+    let syncing = false;
+    async function syncScheduledReminders() {
+        if (!isNative || !LocalNotifications || syncing) return;   // native-only
+        syncing = true;
+        try {
+            if (!state.settings.notifications) { await clearOurScheduled(); return; }
+            if (!(await notifPermitted())) return;
+            await clearOurScheduled();
+
+            const list = [];
+
+            // 1) Daily reminders — repeat every day at HH:MM, even when closed.
+            let rid = REMIND_ID;
+            for (const h of state.habits) {
+                if (!h.reminderTime) continue;
+                const [hh, mm] = h.reminderTime.split(':').map(Number);
+                if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+                list.push({
+                    id: rid++,
+                    title: '🔥 RAW DAWG',
+                    body: h.type === 'build'
+                        ? `Check in for "${h.name}" and keep the streak alive.`
+                        : `Stay strong — keep your "${h.name}" streak going.`,
+                    schedule: { on: { hour: hh, minute: mm }, allowWhileIdle: true },
+                    iconColor: '#ff7a18'
+                });
+            }
+
+            // 2) Upcoming quit milestones — one-off alerts at their known future times.
+            const now = Date.now();
+            const upcoming = [];
+            for (const h of state.habits) {
+                if (h.type !== 'quit' || !h.startDate) continue;
+                const start = new Date(h.startDate).getTime();
+                for (const [ms, label] of QUIT_MS) {
+                    const at = start + ms;
+                    if (at > now) upcoming.push({ at, name: h.name, label });
+                }
+            }
+            upcoming.sort((a, b) => a.at - b.at);
+            let mid = MILE_ID;
+            for (const u of upcoming.slice(0, Math.max(0, MAX_SCHEDULED - list.length))) {
+                list.push({
+                    id: mid++,
+                    title: `🔥 Milestone: ${u.label}`,
+                    body: `"${u.name}" just hit ${u.label}. Keep it raw.`,
+                    schedule: { at: new Date(u.at), allowWhileIdle: true },
+                    iconColor: '#ff7a18'
+                });
+            }
+
+            if (list.length) await LocalNotifications.schedule({ notifications: list });
+        } catch (e) { /* scheduling is best-effort */ }
+        finally { syncing = false; }
     }
     let audioCtx = null;
     function beep(freq = 800, dur = 100) {
@@ -1123,6 +1212,7 @@
             case 'toggle-notif':
                 state.settings.notifications = el.checked; save();
                 if (el.checked) requestNotifPermission();
+                syncScheduledReminders();   // schedule everything (on) or clear it all (off)
                 break;
             case 'toggle-sound': state.settings.sound = el.checked; save(); if (el.checked) beep(700, 80); break;
         }
@@ -1134,8 +1224,13 @@
     render();
     tick();
     setInterval(tick, 1000);
+    syncScheduledReminders();   // refresh OS-scheduled alerts on every launch
     // re-render daily-changing build cards when returning to the app
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncScheduledReminders(); } });
+    // native: top up scheduled alerts whenever the app returns to the foreground
+    if (AppPlugin && AppPlugin.addListener) {
+        AppPlugin.addListener('appStateChange', s => { if (s && s.isActive) syncScheduledReminders(); });
+    }
     </script>
 </body>
 </html>
