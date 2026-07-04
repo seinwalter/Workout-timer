@@ -4,14 +4,32 @@ Your workout timer will show as a **live countdown on the lock screen** and in t
 **Dynamic Island** (iPhone 14 Pro+). On your iPhone X you'll get the lock screen
 version — the countdown runs natively, so it stays accurate even while locked.
 
-The Swift files are in the `native/` folder of this repo. Xcode requires a few
-manual steps to wire them in (targets can't be created from the command line).
-
 **Requires:** iOS 16.2+ on the phone. Xcode 14.1+.
 
 ---
 
-## Step 0: Pull latest & sync
+## ⚡ Automated setup (recommended)
+
+Close Xcode first, then:
+
+```bash
+cd /Users/seinwalter/Downloads/Workout-timer
+git pull
+./setup-live-activity.sh
+npx cap open ios
+```
+
+Then in Xcode select your iPhone and press **Cmd+R**. If Xcode shows a signing
+error for **FightClubWidget**, click the blue App project icon → FightClubWidget
+target → Signing & Capabilities → pick your Team. That's it.
+
+Everything below is the manual equivalent — only needed if the script fails.
+
+---
+
+## Manual steps (fallback)
+
+### Step 0: Pull latest & sync
 
 ```bash
 cd /Users/seinwalter/Downloads/Workout-timer
