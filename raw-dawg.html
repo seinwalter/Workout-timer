@@ -173,6 +173,48 @@
         .sheet h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 4px; }
         .sheet .sub { color: var(--muted); font-size: .85rem; margin-bottom: 18px; }
 
+        /* ---------- Craving / urge-surf intervention (the panic button) ---------- */
+        .overlay.full { align-items: flex-start; padding: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .craving {
+            position: relative; width: 100%; max-width: 540px; margin: 0 auto; min-height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            padding: calc(env(safe-area-inset-top) + 26px) 20px calc(env(safe-area-inset-bottom) + 24px);
+            background: radial-gradient(120% 75% at 50% 0%, color-mix(in srgb, var(--accent, var(--fire1)) 22%, var(--bg1)) 0%, var(--bg0) 62%);
+            animation: fade .3s ease;
+        }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        .cr-x { position: absolute; top: calc(env(safe-area-inset-top) + 14px); right: 16px;
+            background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer; padding: 4px 8px; }
+        .cr-head { font-size: 1.5rem; font-weight: 900; text-align: center; margin-top: 6px; }
+        .cr-sub { color: var(--muted); font-size: .9rem; text-align: center; line-height: 1.45; margin: 8px 4px 0; max-width: 340px; }
+        .cr-orb-wrap { height: 220px; display: flex; align-items: center; justify-content: center; margin: 4px 0; }
+        .cr-orb {
+            width: 148px; height: 148px; border-radius: 50%;
+            background: radial-gradient(circle at 38% 32%, color-mix(in srgb, var(--accent, var(--fire1)) 82%, #fff), var(--accent, var(--fire1)) 72%);
+            box-shadow: 0 0 62px color-mix(in srgb, var(--accent, var(--fire1)) 55%, transparent);
+            display: flex; align-items: center; justify-content: center;
+            transform: scale(1); transition: transform 4s ease-in-out; will-change: transform;
+        }
+        .cr-label { font-weight: 800; color: #1a1206; font-size: 1rem; letter-spacing: .5px; }
+        .cr-timer { font-variant-numeric: tabular-nums; font-size: 1.1rem; font-weight: 800; color: var(--accent, var(--fire2)); margin-top: 4px; }
+        .cr-timer span { color: var(--muted); font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; }
+        .cr-stakes { display: flex; gap: 8px; width: 100%; margin-top: 18px; }
+        .cr-stakes .m { flex: 1; background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 12px; padding: 10px 4px; text-align: center; }
+        .cr-stakes .m b { display: block; font-size: 1.05rem; font-weight: 800; }
+        .cr-stakes .m span { display: block; font-size: .55rem; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+        .cr-why { width: 100%; background: rgba(255,255,255,.045); border: 1px solid var(--line);
+            border-left: 3px solid var(--accent, var(--fire1)); border-radius: 12px; padding: 12px 14px; margin-top: 14px; }
+        .cr-why .t { font-size: .66rem; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+        .cr-why ul { margin: 0; padding-left: 18px; }
+        .cr-why li { font-size: .92rem; line-height: 1.5; margin: 2px 0; }
+        .cr-spacer { flex: 1; min-height: 16px; }
+        .cr-beat {
+            width: 100%; padding: 17px; border: none; border-radius: 15px; font-weight: 900; font-size: 1.05rem; cursor: pointer;
+            background: linear-gradient(135deg, var(--good), color-mix(in srgb, var(--good) 55%, #fff)); color: #05230f;
+            box-shadow: 0 8px 26px color-mix(in srgb, var(--good) 40%, transparent); transition: transform .08s;
+        }
+        .cr-beat:active { transform: scale(.98); }
+
         label.f { display: block; font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 14px 0 6px; font-weight: 700; }
         input.f, textarea.f, select.f {
             width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--text);
@@ -258,9 +300,52 @@
 
     <script>
     /* ============================================================
-       RAW DAWG — single-file habit / addiction streak tracker (PWA)
+       RAW DAWG — single-file habit / addiction streak tracker
        Pure vanilla JS, persists to localStorage. No build step.
+       Runs as a web PWA and as a native iOS app (via Capacitor).
        ============================================================ */
+
+    /* ---------- Native bridge (Capacitor) ----------
+       In the native iOS app these are provided by the global window.Capacitor
+       object (no ES6 imports — there is no bundler). On the plain web they are
+       undefined, and everything below falls back to standard web APIs. */
+    const Capacitor = window.Capacitor || {};
+    const isNative = !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    // Acquire a native plugin without a bundler: registerPlugin() proxies straight
+    // to the installed native plugin via the bridge; fall back to the Plugins map.
+    function nativePlugin(name) {
+        if (!isNative) return null;
+        try { if (Capacitor.registerPlugin) return Capacitor.registerPlugin(name); } catch (e) {}
+        return (Capacitor.Plugins && Capacitor.Plugins[name]) || null;
+    }
+    const Haptics = nativePlugin('Haptics');
+    const LocalNotifications = nativePlugin('LocalNotifications');
+    const AppPlugin = nativePlugin('App');
+    const ImpactStyle = { Heavy: 'HEAVY', Medium: 'MEDIUM', Light: 'LIGHT' };
+
+    // Haptic feedback — native impact engine on iOS, vibration fallback on web.
+    async function haptic(style = ImpactStyle.Light) {
+        try {
+            if (Haptics) { await Haptics.impact({ style }); return; }
+        } catch (e) {}
+        if (navigator.vibrate) {
+            navigator.vibrate(style === ImpactStyle.Heavy ? [40, 60, 40] : style === ImpactStyle.Medium ? 35 : 18);
+        }
+    }
+
+    // Ask for notification permission via native plugin if present, else web.
+    async function requestNotifPermission() {
+        if (LocalNotifications) {
+            try {
+                const p = await LocalNotifications.checkPermissions();
+                if (p.display !== 'granted') await LocalNotifications.requestPermissions();
+                return;
+            } catch (e) {}
+        }
+        if ('Notification' in window && Notification.permission === 'default') {
+            try { Notification.requestPermission(); } catch (e) {}
+        }
+    }
 
     const STORAGE_KEY = 'rawdawg.v1';
     const DAY = 86400000, HOUR = 3600000, MIN = 60000;
@@ -564,6 +649,7 @@
         const mini = [];
         mini.push(miniStat(Math.floor(best / DAY) + 'd', 'Best'));
         mini.push(miniStat(relapses, 'Resets'));
+        if ((h.cravings || []).length) mini.push(miniStat(h.cravings.length, 'Urges Beat'));
         if (h.costPerDay) mini.push(miniStat(fmtMoney(h.costPerDay * (ms / DAY)), 'Saved'));
         else if (h.hoursPerDay) mini.push(miniStat(fmtHours(h.hoursPerDay * (ms / DAY)), 'Reclaimed'));
 
@@ -577,7 +663,8 @@
             ${progress(pct, ptxt, Math.round(pct))}
             <div class="ministats">${mini.join('')}</div>
             <div class="actions">
-                <button class="btn btn-danger" data-action="relapse" data-id="${h.id}">✕ Relapse / Reset</button>
+                <button class="btn btn-good" data-action="craving" data-id="${h.id}">🛡 Hold the line</button>
+                <button class="btn btn-danger" data-action="relapse" data-id="${h.id}" style="flex:0 0 auto;padding:13px 16px">Reset</button>
             </div>
         </div>`;
     }
@@ -673,20 +760,20 @@
         beep(660, 90); setTimeout(() => beep(880, 140), 110);
         toast(`🔥 ${h.name}: ${label} hit!`);
         notify(`🔥 Milestone: ${label}`, `"${h.name}" just hit ${label}. Keep it raw.`);
-        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+        haptic(ImpactStyle.Heavy);
     }
 
     /* ============================================================
        ACTIONS
        ============================================================ */
-    function relapse(id) {
+    function relapse(id, prefill) {
         const h = state.habits.find(x => x.id === id); if (!h) return;
         openSheet(`
             <div class="sheet-grab"></div>
             <h2>Reset "${esc(h.name)}"?</h2>
             <p class="sub">This logs a relapse and restarts the clock from now. Your best streak is kept.</p>
             <label class="f">What happened? (optional)</label>
-            <input class="f" id="relapseNote" placeholder="Trigger, mood, lesson...">
+            <input class="f" id="relapseNote" value="${esc(prefill || '')}" placeholder="Trigger, mood, lesson...">
             <button class="save-btn" style="background:linear-gradient(135deg,#ff4d4d,#ff7a7a)" data-action="confirm-relapse" data-id="${id}">Yes, reset the streak</button>
             <button class="text-btn" data-action="close">Never mind — stay strong</button>
         `);
@@ -700,7 +787,104 @@
         h._lastMilestone = 0;
         save(); closeSheet(); render();
         toast('Streak reset. Day one starts now. 💪');
-        if (navigator.vibrate) navigator.vibrate(60);
+        haptic(ImpactStyle.Medium);
+        syncScheduledReminders();
+    }
+
+    /* ============================================================
+       CRAVING — real-time urge-surf intervention (the panic button)
+       Instead of just resetting, hit "Hold the line" the moment an urge
+       strikes: breathe through it (4-7-8), see everything you'd throw away,
+       and log a WIN. Every beaten urge is counted and preserved.
+       ============================================================ */
+    let cravingTimers = [], cravingStart = 0;
+
+    function reasonsFor(h) {
+        const custom = (h.reasons || []).filter(Boolean);
+        if (custom.length) return custom;
+        const p = presetByKey(h.preset || 'custom');
+        return p && p.why ? [p.why] : [];
+    }
+
+    function openCraving(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || h.type !== 'quit') return;
+        const ms = quitMs(h), beaten = (h.cravings || []).length;
+        const stakes = [`<div class="m"><b>${ms >= DAY ? Math.floor(ms/DAY) + 'd' : Math.floor(ms/HOUR) + 'h'}</b><span>Clean</span></div>`];
+        if (h.costPerDay) stakes.push(`<div class="m"><b>${fmtMoney(h.costPerDay * ms / DAY)}</b><span>Saved</span></div>`);
+        if (h.hoursPerDay) stakes.push(`<div class="m"><b>${fmtHours(h.hoursPerDay * ms / DAY)}</b><span>Reclaimed</span></div>`);
+        stakes.push(`<div class="m"><b>${beaten}</b><span>Urges Beat</span></div>`);
+
+        const reasons = reasonsFor(h);
+        const why = reasons.length
+            ? `<div class="cr-why"><div class="t">Why you started</div><ul>${reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>` : '';
+
+        openFull(`
+            <div class="craving" style="--accent:${h.color || '#ff7a18'}">
+                <button class="cr-x" data-action="craving-close" aria-label="Close">✕</button>
+                <div class="cr-head">Ride the wave 🌊</div>
+                <div class="cr-sub">A craving peaks and fades in a few minutes. Breathe with the circle — don't act, just outlast it.</div>
+                <div class="cr-orb-wrap"><div class="cr-orb" id="crOrb"><span class="cr-label" id="crLabel">Breathe in</span></div></div>
+                <div class="cr-timer" id="crTimer">0:00 <span>holding strong</span></div>
+                <div class="cr-stakes">${stakes.join('')}</div>
+                ${why}
+                <div class="cr-spacer"></div>
+                <input class="f" id="crTrigger" placeholder="What set it off? (optional)" style="margin-top:16px">
+                <button class="cr-beat" data-action="craving-beat" data-id="${id}" style="margin-top:12px">I beat it 💪</button>
+                <button class="text-btn" data-action="craving-slip" data-id="${id}" style="color:var(--danger)">I slipped…</button>
+            </div>
+        `);
+        startBreathing();
+        startCravingTimer();
+        haptic(ImpactStyle.Medium);
+    }
+
+    // 4-7-8 breathing: inhale 4s, hold 7s, exhale 8s — a known craving/anxiety technique.
+    function startBreathing() {
+        const phases = [['Breathe in', 4, 1.42], ['Hold', 7, 1.42], ['Breathe out', 8, 1]];
+        let i = 0;
+        (function step() {
+            const orb = document.getElementById('crOrb'), lab = document.getElementById('crLabel');
+            if (!orb || !lab) return;                 // screen closed — stop looping
+            const [text, secs, scale] = phases[i];
+            lab.textContent = text;
+            orb.style.transitionDuration = secs + 's';
+            orb.style.transform = 'scale(' + scale + ')';
+            i = (i + 1) % phases.length;
+            cravingTimers.push(setTimeout(step, secs * 1000));
+        })();
+    }
+
+    function startCravingTimer() {
+        cravingStart = Date.now();
+        cravingTimers.push(setInterval(() => {
+            const el = document.getElementById('crTimer'); if (!el) return;
+            const s = Math.floor((Date.now() - cravingStart) / 1000);
+            el.innerHTML = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' <span>holding strong</span>';
+        }, 1000));
+    }
+
+    function stopCraving() {
+        cravingTimers.forEach(t => { clearTimeout(t); clearInterval(t); });
+        cravingTimers = []; cravingStart = 0;
+    }
+
+    function beatCraving(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        const trigger = ((document.getElementById('crTrigger') || {}).value || '').trim();
+        const held = cravingStart ? Math.floor((Date.now() - cravingStart) / 1000) : 0;
+        h.cravings = h.cravings || [];
+        h.cravings.push({ date: new Date().toISOString(), outcome: 'beat', trigger, held });
+        stopCraving(); closeFull(); save(); render();
+        const n = h.cravings.length;
+        beep(660, 90); setTimeout(() => beep(880, 150), 120);
+        haptic(ImpactStyle.Heavy);
+        toast(`💪 Urge beaten — that's ${n}. Streak intact.`);
+    }
+
+    function cravingSlip(id) {
+        const trigger = ((document.getElementById('crTrigger') || {}).value || '').trim();
+        stopCraving(); closeFull();
+        relapse(id, trigger);   // fall into the normal reset flow, trigger prefilled
     }
 
     function checkIn(id) {
@@ -710,7 +894,7 @@
         if (!h.checkIns.includes(k)) h.checkIns.push(k);
         const streak = buildStreak(h);
         save(); render();
-        beep(720, 80); if (navigator.vibrate) navigator.vibrate(30);
+        beep(720, 80); haptic(ImpactStyle.Medium);
         if (BUILD_DAYS.includes(streak)) celebrate(h, streak + ' days');
         else toast('✓ Checked in. Streak: ' + streak);
     }
@@ -725,6 +909,7 @@
         state.habits = state.habits.filter(x => x.id !== id);
         save(); closeSheet(); render();
         toast('Tracker deleted.');
+        syncScheduledReminders();
     }
 
     /* ============================================================
@@ -736,18 +921,21 @@
         if (habit) {
             draft = { ...habit, editing: true };
             if (habit.startDate) draft.startLocal = isoToLocal(habit.startDate);
+            draft.reasonsText = (habit.reasons || []).join('\n');
         } else {
             const p = presetByKey('custom');
             draft = { preset: 'custom', name: '', icon: p.icon, color: p.color, type: p.type, cat: p.cat,
-                      goalDays: '', costPerDay: '', hoursPerDay: '', reminderTime: '', startNow: true };
+                      goalDays: '', costPerDay: '', hoursPerDay: '', reminderTime: '', reasonsText: '', startNow: true };
         }
         renderForm();
     }
     function selectPreset(key) {
+        syncDraftFromInputs();                  // keep any goal/cost/hours/reminder already typed
         const p = presetByKey(key);
-        draft.preset = key; draft.name = p.name === 'Custom' ? '' : p.name;
+        draft.preset = key;
+        if (p.name !== 'Custom') draft.name = p.name;   // a preset fills the name; Custom keeps yours
         draft.icon = p.icon; draft.color = p.color; draft.type = p.type; draft.cat = p.cat;
-        renderForm(true);
+        renderForm();                           // render WITHOUT re-reading inputs, so preset values stick
     }
     function renderForm(keepValues) {
         if (keepValues) syncDraftFromInputs();
@@ -804,6 +992,9 @@
             <label class="f">Daily reminder (optional)</label>
             <input class="f" id="fReminder" type="time" value="${esc(draft.reminderTime)}">
 
+            <label class="f">Your why — reasons to stay strong (optional, one per line)</label>
+            <textarea class="f" id="fReasons" rows="3" placeholder="Be present for my kids&#10;Save $300 a month&#10;Sleep better, think clearer">${esc(draft.reasonsText || '')}</textarea>
+
             <button class="save-btn" data-action="save-habit">${draft.editing ? 'Save changes' : 'Start tracking 🔥'}</button>
             ${draft.editing ? `<button class="text-btn del" data-action="delete" data-id="${draft.id}">Delete this tracker</button>` : ''}
             <button class="text-btn" data-action="close">Cancel</button>
@@ -824,6 +1015,7 @@
         if (g('fCost') != null) draft.costPerDay = g('fCost');
         if (g('fHours') != null) draft.hoursPerDay = g('fHours');
         if (g('fReminder') != null) draft.reminderTime = g('fReminder');
+        if (g('fReasons') != null) draft.reasonsText = g('fReasons');
         if (g('fStart') != null) draft.startLocal = g('fStart');
     }
     function setType(t) { syncDraftFromInputs(); draft.type = t; renderForm(); }
@@ -838,7 +1030,8 @@
             goalDays: parseInt(draft.goalDays) || 0,
             costPerDay: parseFloat(draft.costPerDay) || 0,
             hoursPerDay: parseFloat(draft.hoursPerDay) || 0,
-            reminderTime: draft.reminderTime || ''
+            reminderTime: draft.reminderTime || '',
+            reasons: (draft.reasonsText || '').split('\n').map(s => s.trim()).filter(Boolean)
         };
         if (draft.editing) {
             const h = state.habits.find(x => x.id === draft.id);
@@ -855,9 +1048,12 @@
                 relapses: [], checkIns: [], _lastMilestone: 0, ...common
             });
         }
+        // If they set a daily reminder, turn notifications on so it actually fires.
+        if (common.reminderTime && !state.settings.notifications) state.settings.notifications = true;
         save(); closeSheet(); render();
         toast(draft.editing ? 'Saved.' : 'Tracker started. Stay raw. 🔥');
         maybeAskNotifications();
+        syncScheduledReminders();
     }
 
     /* ============================================================
@@ -876,10 +1072,12 @@
             const sav = [];
             if (h.costPerDay) sav.push(['Saved', fmtMoney(h.costPerDay * ms / DAY)]);
             if (h.hoursPerDay) sav.push(['Reclaimed', fmtHours(h.hoursPerDay * ms / DAY)]);
-            body += statsBlock([['Current', Math.floor(ms/DAY) + 'd'], ['Best', Math.floor(best/DAY) + 'd'], ['Resets', (h.relapses||[]).length], ...sav]);
+            const beaten = (h.cravings || []).length;
+            body += statsBlock([['Current', Math.floor(ms/DAY) + 'd'], ['Best', Math.floor(best/DAY) + 'd'], ['Resets', (h.relapses||[]).length], ...(beaten ? [['Urges Beat', beaten]] : []), ...sav]);
         }
 
-        if (p.why) body += `<div class="why">${esc(p.why)}</div>`;
+        const detailReasons = reasonsFor(h);
+        if (detailReasons.length) body += `<div class="why">${detailReasons.map(esc).join(' · ')}</div>`;
 
         // milestone timeline
         if (p.timeline && p.timeline.length) {
@@ -946,7 +1144,7 @@
             <p class="sub">RAW DAWG runs entirely on your phone. Your data stays in this browser.</p>
 
             <div class="toggle-row">
-                <div class="tl-label"><b>Notifications</b><span>Milestone + reminder alerts (while app is open)</span></div>
+                <div class="tl-label"><b>Notifications</b><span>Milestone + daily reminder alerts</span></div>
                 <label class="switch"><input type="checkbox" id="setNotif" ${s.notifications?'checked':''} data-action="toggle-notif"><span class="sl"></span></label>
             </div>
             <div class="toggle-row">
@@ -984,27 +1182,115 @@
             const obj = JSON.parse(txt);
             if (!obj.habits) throw 0;
             state = obj; if (!state.settings) state.settings = { notifications: false, sound: true };
-            save(); closeSheet(); render(); toast('Data restored. 🔥');
+            save(); closeSheet(); render(); toast('Data restored. 🔥'); syncScheduledReminders();
         } catch (e) { toast('That did not look like a valid backup.'); }
     }
     function resetAll() {
         if (!confirm('Erase ALL trackers and history? This cannot be undone.')) return;
         state = { habits: [], settings: state.settings };
-        save(); closeSheet(); render(); toast('Wiped clean.');
+        save(); closeSheet(); render(); toast('Wiped clean.'); syncScheduledReminders();
     }
 
     /* ============================================================
        NOTIFICATIONS + SOUND
        ============================================================ */
     function maybeAskNotifications() {
-        if (state.settings.notifications && 'Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
+        if (state.settings.notifications) requestNotifPermission();
     }
-    function notify(title, body) {
-        if (!state.settings.notifications) return;
+    // In-app/web notification. On the native app we DON'T fire here — alerts are
+    // pre-scheduled at the OS level (see syncScheduledReminders) so they arrive even
+    // when the app is closed, and we'd otherwise double up.
+    async function notify(title, body) {
+        if (!state.settings.notifications || isNative) return;
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         try { new Notification(title, { body }); } catch (e) {}
+    }
+
+    /* ----- OS-level scheduling (native only) -------------------------------------
+       Pre-schedules reminders + milestones with iOS so they fire when the app is
+       CLOSED. iOS keeps ~64 pending notifications, so we schedule the daily
+       reminders first, then fill the rest with the soonest upcoming milestones.
+       Re-run on every change, on launch, and on app resume to keep it fresh. */
+    const REMIND_ID = 100000;   // daily-reminder notification ids start here
+    const MILE_ID   = 200000;   // milestone notification ids start here
+    const MAX_SCHEDULED = 60;   // stay safely under the iOS 64-pending limit
+
+    async function notifPermitted() {
+        if (!LocalNotifications) return false;
+        try {
+            let p = await LocalNotifications.checkPermissions();
+            if (p.display === 'prompt' || p.display === 'prompt-with-rationale') {
+                p = await LocalNotifications.requestPermissions();
+            }
+            return p.display === 'granted';
+        } catch (e) { return false; }
+    }
+
+    async function clearOurScheduled() {
+        if (!LocalNotifications) return;
+        try {
+            const pending = await LocalNotifications.getPending();
+            const ours = ((pending && pending.notifications) || [])
+                .filter(n => n.id >= REMIND_ID)
+                .map(n => ({ id: n.id }));
+            if (ours.length) await LocalNotifications.cancel({ notifications: ours });
+        } catch (e) {}
+    }
+
+    let syncing = false;
+    async function syncScheduledReminders() {
+        if (!isNative || !LocalNotifications || syncing) return;   // native-only
+        syncing = true;
+        try {
+            if (!state.settings.notifications) { await clearOurScheduled(); return; }
+            if (!(await notifPermitted())) return;
+            await clearOurScheduled();
+
+            const list = [];
+
+            // 1) Daily reminders — repeat every day at HH:MM, even when closed.
+            let rid = REMIND_ID;
+            for (const h of state.habits) {
+                if (!h.reminderTime) continue;
+                const [hh, mm] = h.reminderTime.split(':').map(Number);
+                if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+                list.push({
+                    id: rid++,
+                    title: '🔥 RAW DAWG',
+                    body: h.type === 'build'
+                        ? `Check in for "${h.name}" and keep the streak alive.`
+                        : `Stay strong — keep your "${h.name}" streak going.`,
+                    schedule: { on: { hour: hh, minute: mm }, allowWhileIdle: true },
+                    iconColor: '#ff7a18'
+                });
+            }
+
+            // 2) Upcoming quit milestones — one-off alerts at their known future times.
+            const now = Date.now();
+            const upcoming = [];
+            for (const h of state.habits) {
+                if (h.type !== 'quit' || !h.startDate) continue;
+                const start = new Date(h.startDate).getTime();
+                for (const [ms, label] of QUIT_MS) {
+                    const at = start + ms;
+                    if (at > now) upcoming.push({ at, name: h.name, label });
+                }
+            }
+            upcoming.sort((a, b) => a.at - b.at);
+            let mid = MILE_ID;
+            for (const u of upcoming.slice(0, Math.max(0, MAX_SCHEDULED - list.length))) {
+                list.push({
+                    id: mid++,
+                    title: `🔥 Milestone: ${u.label}`,
+                    body: `"${u.name}" just hit ${u.label}. Keep it raw.`,
+                    schedule: { at: new Date(u.at), allowWhileIdle: true },
+                    iconColor: '#ff7a18'
+                });
+            }
+
+            if (list.length) await LocalNotifications.schedule({ notifications: list });
+        } catch (e) { /* scheduling is best-effort */ }
+        finally { syncing = false; }
     }
     let audioCtx = null;
     function beep(freq = 800, dur = 100) {
@@ -1026,6 +1312,7 @@
     const overlay = document.getElementById('overlay');
     function openSheet(html) {
         overlay.innerHTML = `<div class="sheet">${html}</div>`;
+        overlay.classList.remove('full');
         overlay.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
@@ -1033,9 +1320,24 @@
         overlay.classList.remove('show'); overlay.innerHTML = '';
         document.body.style.overflow = '';
     }
+    // Full-screen takeover (used by the craving intervention).
+    function openFull(html) {
+        overlay.innerHTML = html;
+        overlay.classList.add('show', 'full');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeFull() {
+        overlay.classList.remove('show', 'full');
+        overlay.innerHTML = '';
+        document.body.style.overflow = '';
+    }
     // only close when the backdrop itself is tapped, so in-sheet clicks still
     // bubble to the document-level action delegation below
-    overlay.addEventListener('click', e => { if (e.target === overlay) closeSheet(); });
+    overlay.addEventListener('click', e => {
+        if (e.target !== overlay) return;
+        if (overlay.classList.contains('full')) { stopCraving(); closeFull(); }
+        else closeSheet();
+    });
 
     let toastTimer = null;
     function toast(msg) {
@@ -1050,6 +1352,7 @@
        ============================================================ */
     document.addEventListener('click', e => {
         const el = e.target.closest('[data-action]'); if (!el) return;
+        haptic(ImpactStyle.Light);
         const id = el.getAttribute('data-id');
         const action = el.getAttribute('data-action');
         switch (action) {
@@ -1061,6 +1364,10 @@
             case 'delete': deleteHabit(id); break;
             case 'relapse': relapse(id); break;
             case 'confirm-relapse': confirmRelapse(id); break;
+            case 'craving': openCraving(id); break;
+            case 'craving-beat': beatCraving(id); break;
+            case 'craving-slip': cravingSlip(id); break;
+            case 'craving-close': stopCraving(); closeFull(); break;
             case 'checkin': checkIn(id); break;
             case 'uncheck': uncheck(id); break;
             case 'select-preset': selectPreset(el.dataset.preset); break;
@@ -1072,7 +1379,8 @@
             case 'reset-all': resetAll(); break;
             case 'toggle-notif':
                 state.settings.notifications = el.checked; save();
-                if (el.checked && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+                if (el.checked) requestNotifPermission();
+                syncScheduledReminders();   // schedule everything (on) or clear it all (off)
                 break;
             case 'toggle-sound': state.settings.sound = el.checked; save(); if (el.checked) beep(700, 80); break;
         }
@@ -1084,8 +1392,13 @@
     render();
     tick();
     setInterval(tick, 1000);
+    syncScheduledReminders();   // refresh OS-scheduled alerts on every launch
     // re-render daily-changing build cards when returning to the app
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncScheduledReminders(); } });
+    // native: top up scheduled alerts whenever the app returns to the foreground
+    if (AppPlugin && AppPlugin.addListener) {
+        AppPlugin.addListener('appStateChange', s => { if (s && s.isActive) syncScheduledReminders(); });
+    }
     </script>
 </body>
 </html>
