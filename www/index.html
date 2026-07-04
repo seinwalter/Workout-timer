@@ -1372,6 +1372,139 @@
             }
         }
 
+        // ===== Live Activity (lock screen + Dynamic Island timer) =====
+        const LiveActivity = Capacitor.Plugins?.LiveActivity;
+        let liveActivityRunning = false;
+
+        function liveActivityPayload() {
+            const workout = workoutData[currentDay];
+            const ex = workout.exercises?.[currentExercise];
+            const next = workout.exercises?.[currentExercise + 1];
+            return {
+                workoutTitle: workout.title,
+                exercise: ex ? ex.name : workout.title,
+                nextExercise: next ? next.name : '',
+                phase: isWorkPhase ? 'WORK' : 'REST',
+                round: currentRound,
+                totalRounds: workout.rounds || 1,
+                endTime: phaseEndAt,
+                exerciseIndex: currentExercise + 1,
+                totalExercises: workout.exercises ? workout.exercises.length : 1
+            };
+        }
+
+        async function startLiveActivity() {
+            if (!LiveActivity) return;
+            try {
+                await LiveActivity.start(liveActivityPayload());
+                liveActivityRunning = true;
+            } catch (e) {
+                console.log('Live Activity unavailable:', e);
+            }
+        }
+
+        async function updateLiveActivity() {
+            if (!LiveActivity || !liveActivityRunning) return;
+            try {
+                await LiveActivity.update(liveActivityPayload());
+            } catch (e) {
+                console.log('Live Activity update failed:', e);
+            }
+        }
+
+        async function endLiveActivity() {
+            if (!LiveActivity || !liveActivityRunning) return;
+            liveActivityRunning = false;
+            try {
+                await LiveActivity.end();
+            } catch (e) {
+                console.log('Live Activity end failed:', e);
+            }
+        }
+
+        // ===== Pre-scheduled phase-end notifications =====
+        // iOS freezes JS when the app is backgrounded/locked, so notifications
+        // fired "live" from JS never arrive. Instead we pre-schedule the entire
+        // remaining sequence of phase changes with iOS whenever a phase starts.
+        // While the app is awake, each flip cancels and re-schedules the chain,
+        // and the in-app banner is shown instead.
+        const PHASE_NOTIFICATION_BASE_ID = 1001;
+        const MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS caps pending at 64
+
+        function buildPhaseNotificationChain() {
+            const workout = workoutData[currentDay];
+            if (!workout.exercises || !workout.workTime) return [];
+
+            const chain = [];
+            let simWork = isWorkPhase;
+            let simExercise = currentExercise;
+            let simRound = currentRound;
+            let at = phaseEndAt;
+
+            while (chain.length < MAX_SCHEDULED_NOTIFICATIONS) {
+                if (simWork) {
+                    chain.push({ at, title: 'Rest Time!', body: 'Take a break' });
+                    if (!settings.autoAdvance && chain.length > 1) break;
+                    simWork = false;
+                    at += (workout.restTime || 0) * 1000;
+                } else {
+                    if (!settings.autoAdvance) {
+                        chain.push({ at, title: 'Exercise Complete!', body: 'Ready for next?' });
+                        break;
+                    }
+                    if (simExercise < workout.exercises.length - 1) {
+                        simExercise++;
+                        chain.push({ at, title: 'Next Exercise', body: workout.exercises[simExercise].name });
+                    } else if (simRound < (workout.rounds || 1)) {
+                        simRound++;
+                        simExercise = 0;
+                        chain.push({ at, title: 'Round Complete!', body: `Starting Round ${simRound}` });
+                    } else {
+                        chain.push({ at, title: 'Workout Complete!', body: 'Great job! 💪' });
+                        break;
+                    }
+                    simWork = true;
+                    at += workout.workTime * 1000;
+                }
+            }
+            return chain;
+        }
+
+        async function schedulePhaseEndNotification() {
+            if (!LocalNotifications || !settings.notifications) return;
+            try {
+                await cancelPhaseEndNotification();
+                const chain = buildPhaseNotificationChain();
+                if (!chain.length) return;
+                await LocalNotifications.schedule({
+                    notifications: chain.map((n, i) => ({
+                        id: PHASE_NOTIFICATION_BASE_ID + i,
+                        title: n.title,
+                        body: n.body,
+                        // 1s after the flip so foreground JS can cancel first
+                        schedule: { at: new Date(n.at + 1000), allowWhileIdle: true },
+                        sound: 'default'
+                    }))
+                });
+            } catch (e) {
+                console.log('Failed to schedule notifications:', e);
+            }
+        }
+
+        async function cancelPhaseEndNotification() {
+            if (!LocalNotifications) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: Array.from(
+                        { length: MAX_SCHEDULED_NOTIFICATIONS },
+                        (_, i) => ({ id: PHASE_NOTIFICATION_BASE_ID + i })
+                    )
+                });
+            } catch (e) {
+                // nothing pending
+            }
+        }
+
         const workoutData = {
             1: {
                 title: "Upper Body KB",
@@ -1470,6 +1603,7 @@
         let timerInterval;
         let currentTime = 0;
         let totalTime = 0;
+        let phaseEndAt = 0; // wall-clock ms timestamp when current phase ends
         let isRunning = false;
         let isPaused = false;
         let isWorkPhase = true;
@@ -1515,37 +1649,8 @@
             // Native haptic feedback
             await haptic(ImpactStyle.Medium);
 
-            // Try native notification first (Capacitor)
-            if (LocalNotifications) {
-                try {
-                    const permission = await LocalNotifications.checkPermissions();
-                    if (permission.display === 'granted' || permission.display === 'prompt') {
-                        if (permission.display === 'prompt') {
-                            await LocalNotifications.requestPermissions();
-                        }
-
-                        // Schedule notification 1 second ahead so it works when app is backgrounded/locked
-                        const scheduleTime = new Date(Date.now() + 1000);
-
-                        await LocalNotifications.schedule({
-                            notifications: [{
-                                title: title,
-                                body: message,
-                                id: Date.now(),
-                                schedule: { at: scheduleTime },
-                                sound: 'default',
-                                smallIcon: 'ic_stat_icon_config_sample',
-                                iconColor: '#ff3b30'
-                            }]
-                        });
-                    }
-                } catch (e) {
-                    // Fallback to in-app notification if native fails
-                    console.log('Native notification unavailable, using in-app:', e);
-                }
-            }
-
-            // In-app notification (always show for immediate feedback when app is open)
+            // In-app banner. Background/locked delivery is handled by the
+            // pre-scheduled phase-end notifications (schedulePhaseEndNotification).
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = `
@@ -1789,11 +1894,17 @@
                     totalTime = currentTime;
                 }
 
+                // Anchor the phase end to the wall clock so the timer stays
+                // accurate even while iOS freezes JS in the background.
+                phaseEndAt = Date.now() + currentTime * 1000;
+                schedulePhaseEndNotification();
+                startLiveActivity();
+
                 document.getElementById('playPauseBtn').innerHTML = '<span>⏸ Pause</span>';
                 playBeep(600, 100);
 
                 timerInterval = setInterval(() => {
-                    currentTime--;
+                    currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
                     updateTimerDisplay();
                     saveState();
 
@@ -1803,11 +1914,15 @@
 
                     if (currentTime <= 0) {
                         playBeep(1000, 200);
+                        // App is awake at the flip: cancel the pre-scheduled
+                        // system notification and use the in-app banner instead.
+                        cancelPhaseEndNotification();
 
                         if (isWorkPhase) {
                             isWorkPhase = false;
                             currentTime = workout.restTime;
                             totalTime = currentTime;
+                            phaseEndAt = Date.now() + currentTime * 1000;
                             updatePhaseDisplay();
                             showNotification('Rest Time!', 'Take a break');
                         } else {
@@ -1838,9 +1953,15 @@
 
                             currentTime = workout.workTime;
                             totalTime = currentTime;
+                            phaseEndAt = Date.now() + currentTime * 1000;
                             updatePhaseDisplay();
                             updateExerciseHighlight();
                         }
+
+                        // New phase started: re-arm background notification and
+                        // refresh the lock screen / Dynamic Island countdown.
+                        schedulePhaseEndNotification();
+                        updateLiveActivity();
                     }
                 }, 1000);
             }
@@ -1850,6 +1971,10 @@
             isPaused = true;
             isRunning = false;
             clearInterval(timerInterval);
+            // Freeze remaining time at the pause moment
+            currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
+            cancelPhaseEndNotification();
+            endLiveActivity();
             document.getElementById('playPauseBtn').innerHTML = '<span>▶ Resume</span>';
             playBeep(400, 100);
         }
@@ -1858,6 +1983,8 @@
             isRunning = false;
             isPaused = false;
             clearInterval(timerInterval);
+            cancelPhaseEndNotification();
+            endLiveActivity();
             const btn = document.getElementById('playPauseBtn');
             if (btn) btn.innerHTML = '<span>▶ Start</span>';
         }
@@ -2040,6 +2167,8 @@
         }
 
         function completeWorkout() {
+            cancelPhaseEndNotification();
+            endLiveActivity();
             if (!completedDays.includes(currentDay)) {
                 completedDays.push(currentDay);
                 localStorage.setItem('completedDays', JSON.stringify(completedDays));
@@ -2127,6 +2256,9 @@
             if (settings.notifications) {
                 requestNotificationPermission();
                 showNotification('Notifications Enabled', 'You\'ll be notified of timer events');
+                if (isRunning && !isPaused) schedulePhaseEndNotification();
+            } else {
+                cancelPhaseEndNotification();
             }
         }
 
@@ -2134,6 +2266,8 @@
             settings.autoAdvance = !settings.autoAdvance;
             localStorage.setItem('settings', JSON.stringify(settings));
             updateSettingsUI();
+            // Re-arm the scheduled chain since the phase sequence changed
+            if (isRunning && !isPaused) schedulePhaseEndNotification();
             playBeep(700, 80);
         }
 
@@ -2198,6 +2332,14 @@
 
         // Save state before page unload
         window.addEventListener('beforeunload', saveState);
+
+        // Catch the timer up immediately when returning from background/lock
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isRunning && !isPaused) {
+                currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
+                updateTimerDisplay();
+            }
+        });
 
         // Prevent audio context issues
         document.addEventListener('click', () => {
