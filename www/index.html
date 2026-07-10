@@ -1542,8 +1542,11 @@
                             <button class="timer-btn" onclick="prevExercise()">
                                 <span>← Prev</span>
                             </button>
-                            <button class="timer-btn half" onclick="nextExercise()">
+                            <button class="timer-btn" onclick="nextExercise()">
                                 <span>Next →</span>
+                            </button>
+                            <button class="timer-btn" onclick="skipRound()" title="Skip to next round">
+                                <span>⏭ Round</span>
                             </button>
                         </div>
                     </div>
@@ -1635,6 +1638,131 @@
             }
         }
 
+        // ===== Timeline-based timer engine =====
+        // The whole workout is planned in absolute wall-clock time when the
+        // timer starts (exactly like the pre-scheduled notifications). Every
+        // tick — and every return from background — just looks up "where are
+        // we right now", so the display can never drift or fall behind, no
+        // matter how long the phone stays locked.
+        let timeline = [];
+        let timelineIndex = 0;
+
+        function buildTimeline() {
+            const workout = workoutData[currentDay];
+            const segs = [];
+            let t = Date.now();
+            let simWork = isWorkPhase;
+            let simEx = currentExercise;
+            let simRound = currentRound;
+
+            const push = (dur) => {
+                segs.push({
+                    start: t, end: t + dur * 1000, duration: dur,
+                    isWork: simWork, exercise: simEx, round: simRound
+                });
+                t += dur * 1000;
+            };
+
+            // First segment: whatever time is left in the current phase
+            push(currentTime > 0 ? currentTime : (simWork ? workout.workTime : workout.restTime));
+
+            if (settings.autoAdvance) {
+                while (segs.length < 400) {
+                    if (simWork) {
+                        simWork = false;
+                        push(workout.restTime || 0);
+                    } else {
+                        if (simEx < workout.exercises.length - 1) {
+                            simEx++;
+                        } else if (simRound < (workout.rounds || 1)) {
+                            simRound++;
+                            simEx = 0;
+                        } else {
+                            break; // workout done
+                        }
+                        simWork = true;
+                        push(workout.workTime);
+                    }
+                }
+            } else if (simWork) {
+                // Manual mode: finish this work phase + its rest, then stop
+                simWork = false;
+                push(workout.restTime || 0);
+            }
+            return segs;
+        }
+
+        function applySegment(seg) {
+            isWorkPhase = seg.isWork;
+            currentExercise = seg.exercise;
+            currentRound = seg.round;
+            totalTime = seg.duration;
+            phaseEndAt = seg.end;
+            const roundEl = document.getElementById('currentRound');
+            if (roundEl) roundEl.textContent = currentRound;
+            updatePhaseDisplay();
+            updateExerciseHighlight();
+        }
+
+        function segmentEnterMessage(seg, prev) {
+            if (!seg.isWork) return { title: 'Rest Time!', body: 'Take a break' };
+            if (prev && seg.round > prev.round) return { title: 'Round Complete!', body: `Starting Round ${seg.round}` };
+            const workout = workoutData[currentDay];
+            return { title: 'Next Exercise', body: workout.exercises[seg.exercise].name };
+        }
+
+        function syncTimer() {
+            if (!isRunning || isPaused || !timeline.length) return;
+            const now = Date.now();
+            const idx = timeline.findIndex(s => now < s.end);
+
+            if (idx === -1) {
+                // Past the end of the timeline — workout (or phase pair) done
+                const wasAuto = settings.autoAdvance;
+                applySegment(timeline[timeline.length - 1]);
+                currentTime = 0;
+                stopTimer();
+                updateTimerDisplay();
+                if (wasAuto) {
+                    showNotification('Workout Complete!', 'Great job! 💪');
+                    setTimeout(() => completeWorkout(), 500);
+                } else {
+                    // Ready to start the next exercise fresh
+                    isWorkPhase = true;
+                    currentTime = 0;
+                    updatePhaseDisplay();
+                    showNotification('Exercise Complete!', 'Ready for next?');
+                }
+                return;
+            }
+
+            if (idx !== timelineIndex) {
+                const singleStep = idx === timelineIndex + 1;
+                const prev = timeline[timelineIndex];
+                applySegment(timeline[idx]);
+                timelineIndex = idx;
+
+                if (singleStep) {
+                    // Live flip while the app is awake: beep, banner, and swap
+                    // the pending system notification for the in-app one.
+                    playBeep(1000, 200);
+                    const msg = segmentEnterMessage(timeline[idx], prev);
+                    showNotification(msg.title, msg.body);
+                    schedulePhaseEndNotification();
+                } // Multi-segment jump = catching up after lock: stay silent,
+                  // the system notifications already covered those flips.
+                updateLiveActivity();
+            }
+
+            currentTime = Math.max(0, Math.ceil((phaseEndAt - now) / 1000));
+            updateTimerDisplay();
+            saveState();
+
+            if (currentTime <= 3 && currentTime > 0) {
+                playBeep(800, 100);
+            }
+        }
+
         function startTimer() {
             const workout = workoutData[currentDay];
             if (!workout.workTime) return;
@@ -1648,76 +1776,18 @@
                     totalTime = currentTime;
                 }
 
-                // Anchor the phase end to the wall clock so the timer stays
-                // accurate even while iOS freezes JS in the background.
-                phaseEndAt = Date.now() + currentTime * 1000;
+                timeline = buildTimeline();
+                timelineIndex = 0;
+                phaseEndAt = timeline[0].end;
+                totalTime = timeline[0].duration;
                 schedulePhaseEndNotification();
                 startLiveActivity();
 
                 document.getElementById('playPauseBtn').innerHTML = '<span>⏸ Pause</span>';
                 playBeep(600, 100);
+                updateTimerDisplay();
 
-                timerInterval = setInterval(() => {
-                    currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
-                    updateTimerDisplay();
-                    saveState();
-
-                    if (currentTime <= 3 && currentTime > 0) {
-                        playBeep(800, 100);
-                    }
-
-                    if (currentTime <= 0) {
-                        playBeep(1000, 200);
-                        // App is awake at the flip: cancel the pre-scheduled
-                        // system notification and use the in-app banner instead.
-                        cancelPhaseEndNotification();
-
-                        if (isWorkPhase) {
-                            isWorkPhase = false;
-                            currentTime = workout.restTime;
-                            totalTime = currentTime;
-                            phaseEndAt = Date.now() + currentTime * 1000;
-                            updatePhaseDisplay();
-                            showNotification('Rest Time!', 'Take a break');
-                        } else {
-                            isWorkPhase = true;
-
-                            if (settings.autoAdvance) {
-                                if (currentExercise < workout.exercises.length - 1) {
-                                    currentExercise++;
-                                    showNotification('Next Exercise', workout.exercises[currentExercise].name);
-                                } else {
-                                    if (currentRound < workout.rounds) {
-                                        currentRound++;
-                                        currentExercise = 0;
-                                        document.getElementById('currentRound').textContent = currentRound;
-                                        showNotification('Round Complete!', `Starting Round ${currentRound}`);
-                                    } else {
-                                        stopTimer();
-                                        showNotification('Workout Complete!', 'Great job! 💪');
-                                        setTimeout(() => completeWorkout(), 1000);
-                                        return;
-                                    }
-                                }
-                            } else {
-                                stopTimer();
-                                showNotification('Exercise Complete!', 'Ready for next?');
-                                return;
-                            }
-
-                            currentTime = workout.workTime;
-                            totalTime = currentTime;
-                            phaseEndAt = Date.now() + currentTime * 1000;
-                            updatePhaseDisplay();
-                            updateExerciseHighlight();
-                        }
-
-                        // New phase started: re-arm background notification and
-                        // refresh the lock screen / Dynamic Island countdown.
-                        schedulePhaseEndNotification();
-                        updateLiveActivity();
-                    }
-                }, 1000);
+                timerInterval = setInterval(syncTimer, 1000);
             }
         }
 
@@ -1726,7 +1796,8 @@
             isRunning = false;
             clearInterval(timerInterval);
             // Freeze remaining time at the pause moment
-            currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
+            currentTime = Math.max(0, Math.ceil((phaseEndAt - Date.now()) / 1000));
+            timeline = [];
             cancelPhaseEndNotification();
             endLiveActivity();
             document.getElementById('playPauseBtn').innerHTML = '<span>▶ Resume</span>';
@@ -1737,10 +1808,44 @@
             isRunning = false;
             isPaused = false;
             clearInterval(timerInterval);
+            timeline = [];
             cancelPhaseEndNotification();
             endLiveActivity();
             const btn = document.getElementById('playPauseBtn');
             if (btn) btn.innerHTML = '<span>▶ Start</span>';
+        }
+
+        function skipRound() {
+            const workout = workoutData[currentDay];
+            if (!workout.rounds || !workout.exercises) return;
+
+            if (currentRound < workout.rounds) {
+                const wasRunning = isRunning && !isPaused;
+                stopTimer();
+                currentRound++;
+                currentExercise = 0;
+                isWorkPhase = true;
+                currentTime = 0;
+                const roundEl = document.getElementById('currentRound');
+                if (roundEl) roundEl.textContent = currentRound;
+                updateExerciseHighlight();
+                showNotification('Round Skipped', `Round ${currentRound} — ${workout.exercises[0].name}`);
+                if (wasRunning) {
+                    startTimer();
+                } else {
+                    currentTime = workout.workTime;
+                    totalTime = currentTime;
+                    updatePhaseDisplay();
+                    updateTimerDisplay();
+                }
+                saveState();
+                playBeep(700, 100);
+            } else {
+                // Already on the last round — skipping finishes the workout
+                stopTimer();
+                showNotification('Workout Complete!', 'Great job! 💪');
+                completeWorkout();
+            }
         }
 
         function resetTimer() {
@@ -1786,36 +1891,39 @@
             updateTimerDisplay();
         }
 
-        function nextExercise() {
+        // Jump to a different exercise. If the timer was running it keeps
+        // running — a fresh work phase starts for the new exercise instead of
+        // dumping you back to a stopped timer.
+        function goToExercise(index) {
             const workout = workoutData[currentDay];
-            if (workout.exercises && currentExercise < workout.exercises.length - 1) {
-                currentExercise++;
-                updateExerciseHighlight();
-                if (isRunning || isPaused) {
-                    stopTimer();
-                    currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                    totalTime = currentTime;
-                    updateTimerDisplay();
-                }
-                playBeep(600, 100);
-                saveState();
+            if (!workout.exercises || index < 0 || index >= workout.exercises.length) return;
+
+            const wasRunning = isRunning && !isPaused;
+            if (isRunning || isPaused) stopTimer();
+
+            currentExercise = index;
+            isWorkPhase = true;
+            currentTime = 0;
+            updateExerciseHighlight();
+
+            if (wasRunning) {
+                startTimer();
+            } else {
+                currentTime = workout.workTime || 0;
+                totalTime = currentTime;
+                updatePhaseDisplay();
+                updateTimerDisplay();
             }
+            playBeep(600, 100);
+            saveState();
+        }
+
+        function nextExercise() {
+            goToExercise(currentExercise + 1);
         }
 
         function prevExercise() {
-            if (currentExercise > 0) {
-                currentExercise--;
-                updateExerciseHighlight();
-                const workout = workoutData[currentDay];
-                if (isRunning || isPaused) {
-                    stopTimer();
-                    currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                    totalTime = currentTime;
-                    updateTimerDisplay();
-                }
-                playBeep(600, 100);
-                saveState();
-            }
+            goToExercise(currentExercise - 1);
         }
 
         function updateExerciseHighlight() {
@@ -1864,21 +1972,7 @@
         }
 
         function jumpToExercise(index) {
-            const workout = workoutData[currentDay];
-            if (!workout || !workout.exercises || index < 0 || index >= workout.exercises.length) return;
-
-            currentExercise = index;
-            updateExerciseHighlight();
-
-            if (isRunning || isPaused) {
-                stopTimer();
-                currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                totalTime = currentTime;
-                updateTimerDisplay();
-            }
-
-            playBeep(600, 100);
-            saveState();
+            goToExercise(index);
         }
 
         function toggleCollapse(button) {
@@ -2115,19 +2209,30 @@
         window.addEventListener('beforeunload', saveState);
 
         // Catch the timer up immediately when returning from background/lock
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                // New week may have started while the app sat in the background
-                if (checkWeeklyReset()) {
-                    updateDayButtons();
-                    loadWorkout();
-                }
-                if (isRunning && !isPaused) {
-                    currentTime = Math.max(0, Math.round((phaseEndAt - Date.now()) / 1000));
-                    updateTimerDisplay();
-                }
+        // Instantly re-sync the timer to the wall clock whenever the app
+        // comes back from the lock screen or background. Uses both the web
+        // visibility event and Capacitor's native appStateChange, since
+        // visibilitychange alone is unreliable across iOS lock/unlock.
+        function onAppResume() {
+            // New week may have started while the app sat in the background
+            if (checkWeeklyReset()) {
+                updateDayButtons();
+                loadWorkout();
             }
+            syncTimer();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) onAppResume();
         });
+
+        const CapApp = Capacitor.Plugins?.App;
+        if (CapApp) {
+            CapApp.addListener('appStateChange', (state) => {
+                if (state.isActive) onAppResume();
+            });
+            CapApp.addListener('resume', () => onAppResume());
+        }
 
         // Prevent audio context issues
         document.addEventListener('click', () => {
