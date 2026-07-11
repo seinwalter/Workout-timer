@@ -1,6 +1,6 @@
-# Build the RAW DAWG iOS App
+# Build the PROTOCOL iOS App
 
-Turn the RAW DAWG life tracker into a real native app on your iPhone — same
+Turn the PROTOCOL discipline tracker into a real native app on your iPhone — same
 technique as the Fight Club app (Capacitor wrapping the web app). No App Store
 and no paid Developer account needed for personal use.
 
@@ -56,7 +56,7 @@ npx cap sync
 ```
 
 This creates the `ios/` folder containing the Xcode project, and bakes the
-RAW DAWG app icon + launch screen into it (generated from `assets/icon.png`
+PROTOCOL app icon + launch screen into it (generated from `assets/icon.png`
 and `assets/splash*.png`).
 
 ### 3. Open in Xcode
@@ -91,13 +91,13 @@ Press the **▶ Play** button (or `Cmd+R`).
 
 First launch shows **Untrusted Developer**:
 - iPhone → **Settings → General → VPN & Device Management** → tap your Apple ID → **Trust**
-- Re-launch RAW DAWG from the home screen.
+- Re-launch PROTOCOL from the home screen.
 
 ---
 
 ## Granting permissions (first run)
 
-- A prompt appears: **"RAW DAWG" Would Like to Send You Notifications** → tap **Allow** (for milestone + daily-reminder alerts).
+- A prompt appears: **"PROTOCOL" Would Like to Send You Notifications** → tap **Allow** (for milestone + daily-reminder alerts).
 - Haptics work automatically (make sure **Settings → Sounds & Haptics → System Haptics** is on).
 
 ---
@@ -118,7 +118,7 @@ npx cap open ios       # then press Cmd+R in Xcode
 - ✅ **Native iOS notifications** — milestone hits and daily reminders fire as real iOS notifications (Capacitor Local Notifications), with an automatic web fallback.
 - ✅ **Haptic feedback** — every tap is a light impact; relapse/check-in is medium; a milestone is a heavy buzz.
 - ✅ **Custom flame app icon + launch screen** — generated from `assets/icon.png` & `assets/splash*.png` by `@capacitor/assets` (regenerate any time with `npm run assets:generate`).
-- ✅ **Dark status bar + splash** themed to RAW DAWG (`#0a0a0a` / `#ff7a18`).
+- ✅ **Dark status bar + splash** themed to PROTOCOL (`#0d1117` / `#58a6ff`).
 - ✅ **Full offline support** — the entire app is a single self-contained HTML file.
 - ✅ **On-device storage** — all streaks persist in local storage.
 
@@ -132,7 +132,7 @@ is inert (falls back to web APIs) when there's no Capacitor.
 
 - **"Could not launch app"** — unlock the iPhone, replug the cable, restart Xcode.
 - **"Signing failed"** — make sure you're signed into Xcode with your Apple ID; tweak the Bundle Identifier.
-- **No notifications** — iPhone → Settings → Notifications → RAW DAWG → Allow Notifications.
+- **No notifications** — iPhone → Settings → Notifications → PROTOCOL → Allow Notifications.
 - **No haptics** — iPhone → Settings → Sounds & Haptics → System Haptics → on.
 - **Certificate expired (free account)** — just rebuild from Xcode to reinstall.
 

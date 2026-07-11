@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Initial setup for the RAW DAWG iOS app.
+# Initial setup for the PROTOCOL iOS app.
 # Run this ONCE on your Mac (it creates the native Xcode project).
 
 set -e
 
-echo "🔥 Setting up RAW DAWG iOS app..."
+echo "▲ Setting up PROTOCOL iOS app..."
 echo ""
 
 # Must be on a Mac
