@@ -59,6 +59,14 @@ npx --yes @capacitor/assets generate --ios
 echo "🔄 Syncing web assets into the iOS project..."
 npx cap sync
 
+# If the Xcode project pre-dates the rename, sync the display name into it
+# (a freshly created project already gets it from capacitor.config.json).
+PLIST="ios/App/App/Info.plist"
+if [ -f "$PLIST" ] && command -v /usr/libexec/PlistBuddy &> /dev/null; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName PROTOCOL" "$PLIST" 2>/dev/null \
+    && echo "🏷  Display name set to PROTOCOL" || true
+fi
+
 echo ""
 echo "✅ Setup complete!"
 echo ""

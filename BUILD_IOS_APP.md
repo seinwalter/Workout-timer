@@ -75,7 +75,7 @@ In Xcode:
 4. Check **Automatically manage signing**
 5. Choose your **Team** (your Apple ID — click *Add Account* if it isn't listed)
 
-The Bundle Identifier defaults to `com.seinwalter.rawdawg` (set in `capacitor.config.ts`). If signing complains it's taken, change it slightly (e.g. `com.seinwalter.rawdawg2`).
+The Bundle Identifier defaults to `com.seinwalter.rawdawg` (set in `capacitor.config.json`). If signing complains it's taken, change it slightly (e.g. `com.seinwalter.rawdawg2`).
 
 > With a free Apple ID you can install on your own devices. Apps re-signed this way expire after 7 days — just rebuild from Xcode to reinstall.
 
