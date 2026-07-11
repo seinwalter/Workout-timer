@@ -51,7 +51,7 @@ Installs Capacitor core, the iOS platform, and the Haptics / Local Notifications
 mkdir -p www
 cp raw-dawg.html www/index.html
 npx cap add ios
-npx capacitor-assets generate --ios   # custom flame icon + splash from assets/
+npx --yes @capacitor/assets generate --ios   # app icon + splash from assets/
 npx cap sync
 ```
 
@@ -117,7 +117,7 @@ npx cap open ios       # then press Cmd+R in Xcode
 
 - ✅ **Native iOS notifications** — milestone hits and daily reminders fire as real iOS notifications (Capacitor Local Notifications), with an automatic web fallback.
 - ✅ **Haptic feedback** — every tap is a light impact; relapse/check-in is medium; a milestone is a heavy buzz.
-- ✅ **Custom flame app icon + launch screen** — generated from `assets/icon.png` & `assets/splash*.png` by `@capacitor/assets` (regenerate any time with `npm run assets:generate`).
+- ✅ **Custom minimal app icon + launch screen** — generated from `assets/icon.png` & `assets/splash*.png` by `@capacitor/assets` (regenerate any time with `npm run assets:generate`).
 - ✅ **Dark status bar + splash** themed to PROTOCOL (`#0d1117` / `#58a6ff`).
 - ✅ **Full offline support** — the entire app is a single self-contained HTML file.
 - ✅ **On-device storage** — all streaks persist in local storage.
