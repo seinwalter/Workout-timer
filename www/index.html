@@ -134,6 +134,41 @@
             box-shadow: 0 0 8px var(--accent-glow);
         }
 
+        .program-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+            padding: 4px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            border: 0.5px solid var(--hairline);
+        }
+
+        .program-btn {
+            padding: 9px 4px;
+            background: transparent;
+            border: none;
+            border-radius: 9px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: -0.1px;
+            min-height: 38px;
+        }
+
+        .program-btn:active {
+            transform: scale(0.95);
+        }
+
+        .program-btn.active {
+            background: rgba(58, 58, 60, 0.9);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
         .day-selector {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -1030,6 +1065,12 @@
             </div>
         </div>
 
+        <div class="program-selector">
+            <button class="program-btn" data-program="fightclub" onclick="selectProgram('fightclub')">Fight Club</button>
+            <button class="program-btn" data-program="upperlower" onclick="selectProgram('upperlower')">Upper/Lower</button>
+            <button class="program-btn" data-program="home45" onclick="selectProgram('home45')">Home 45</button>
+        </div>
+
         <div class="day-selector">
             <button class="day-btn" onclick="selectDay(1)"><span>MON</span></button>
             <button class="day-btn" onclick="selectDay(2)"><span>TUE</span></button>
@@ -1259,7 +1300,8 @@
             }
         }
 
-        const workoutData = {
+        const PROGRAMS = {
+          fightclub: { name: 'Fight Club', days: {
             1: {
                 title: "Upper Body KB",
                 duration: "25-30 min",
@@ -1349,7 +1391,194 @@
                 message: "Your body grows during rest. Recovery is part of the process.",
                 activities: ["Light stretching or yoga", "Meal prep for the week", "Get 8+ hours of quality sleep", "Hydrate and reflect on your progress"]
             }
+          }},
+
+          upperlower: { name: 'Upper/Lower', days: {
+            1: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "The incline does the fat-burning, not speed" }
+                ]
+            },
+            2: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "Low joint stress, high burn" }
+                ]
+            },
+            3: {
+                title: "Rest Day",
+                type: "rest",
+                message: "Easy day so the weekend lifts have something to recover on.",
+                activities: ["Light stretching or a short stroll", "Protein at every meal — never get ravenous", "Glass of water before eating", "Protect your sleep — it protects the deficit"]
+            },
+            4: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "Podcast pace — just keep moving" }
+                ]
+            },
+            5: {
+                title: "Easy Cardio",
+                duration: "30-45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Easy Walk", details: "Lighter effort — save legs for the weekend" },
+                    { name: "Optional Mobility", details: "Hips, shoulders, 10 min" }
+                ]
+            },
+            6: {
+                title: "Upper (Push + Pull)",
+                duration: "~45 min",
+                type: "circuit",
+                warmup: ["March 2 min • Arm circles • KB halos ×8 each way", "Push-ups ×10 • Dead hang 20 sec"],
+                exercises: [
+                    { name: "KB Overhead Press", details: "Double 25s or single 35 • 8-10 reps, no lean-back" },
+                    { name: "Pull-Ups", details: "Dead hang start, pull shoulder blades down first • 6-10" },
+                    { name: "KB Floor/Bench Press", details: "Double 35s or single 50 • 8-12, slow negative" },
+                    { name: "KB Bent-Over Row", details: "50 lb • 10-12 each side, squeeze at top" },
+                    { name: "KB Lateral Raise", details: "25 lb • 12-15, lead with the elbow" },
+                    { name: "KB High Pull", details: "35 lb • 12-15, elbows lead to collarbone" },
+                    { name: "Push-Ups", details: "AMRAP — chest to floor, full range" },
+                    { name: "KB Shrugs", details: "Heavy • 15-20, hold 1 sec at top" }
+                ],
+                rounds: 4,
+                workTime: 40,
+                restTime: 40,
+                finisher: ["2-3 rounds, minimal rest:", "KB Lateral Raise — 20 reps", "KB Curls — 25/35 • 12-15 reps", "Bench Dips — max reps"],
+                cooldown: ["Doorway chest stretch • Cross-body shoulder stretch", "Overhead lat/tricep stretch • Deep breathing"]
+            },
+            7: {
+                title: "Lower (Back-Friendly)",
+                duration: "~45 min",
+                type: "circuit",
+                warmup: ["March 2 min • Bodyweight squats ×15 • Leg swings ×10", "Glute bridges ×15 • Cat-cow ×10 — wake the spine up", "⚠️ Back cranky? Swap swings/RDLs for glute bridges"],
+                exercises: [
+                    { name: "KB Goblet Squat", details: "35/50 • 12-15, chest up, full depth" },
+                    { name: "KB Reverse Lunge", details: "35 goblet • 10-12 each leg, knee over ankle" },
+                    { name: "KB Swing", details: "35/50 • 15-20 — hip snap powers it, NOT the low back" },
+                    { name: "Bulgarian Split Squat", details: "Rear foot on bench • 8-12 each leg, torso upright" },
+                    { name: "Single-Leg RDL", details: "35 • 10-12 each leg, hinge at hip, flat back" },
+                    { name: "Goblet Pulse / Wall Sit", details: "Bottom-third pulses ×15 or 45 sec hold" },
+                    { name: "Calf Raises", details: "50 held • 20-25, full stretch, squeeze at top" }
+                ],
+                rounds: 4,
+                workTime: 40,
+                restTime: 50,
+                finisher: ["2-3 rounds, minimal rest:", "KB Swings — 35 • 20 reps", "Jump squats or fast goblet squats — 15", "Glute bridge hold — 30 sec"],
+                cooldown: ["Hamstring • quad • hip flexor stretches", "Child's pose — ease in, respect the back"]
+            }
+          }},
+
+          home45: { name: 'Home 45', days: {
+            1: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            2: {
+                title: "Easy Walk + Mobility",
+                duration: "30-40 min",
+                type: "steady",
+                exercises: [
+                    { name: "Walk", details: "20-30 min, easy pace" },
+                    { name: "Mobility", details: "Hips + shoulders, 10 min" }
+                ]
+            },
+            3: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            4: {
+                title: "Easy Walk + Mobility",
+                duration: "30-40 min",
+                type: "steady",
+                exercises: [
+                    { name: "Walk", details: "20-30 min, easy pace" },
+                    { name: "Mobility", details: "Hips + shoulders, 10 min" }
+                ]
+            },
+            5: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            6: {
+                title: "Active Recovery",
+                duration: "45-60 min",
+                type: "steady",
+                exercises: [
+                    { name: "Brisk Walk", details: "Easy effort, enjoy the movement" },
+                    { name: "Stretch", details: "Anything tight from the week" }
+                ]
+            },
+            7: {
+                title: "Rest Day",
+                type: "rest",
+                message: "Your body grows during rest. Recovery is part of the process.",
+                activities: ["Light stretching or yoga", "Meal prep for the week", "Get 8+ hours of quality sleep", "Hydrate and reflect on your progress"]
+            }
+          }}
         };
+
+        let currentProgram = localStorage.getItem('program') || 'fightclub';
+        if (!PROGRAMS[currentProgram]) currentProgram = 'fightclub';
+        let workoutData = PROGRAMS[currentProgram].days;
 
         let currentDay = 1;
         let currentExercise = 0;
@@ -1444,6 +1673,23 @@
             saveState();
         }
 
+        function selectProgram(id) {
+            if (!PROGRAMS[id] || id === currentProgram) return;
+            stopTimer();
+            currentProgram = id;
+            workoutData = PROGRAMS[id].days;
+            localStorage.setItem('program', id);
+            updateProgramButtons();
+            selectDay(currentDay);
+            playBeep(600, 100);
+        }
+
+        function updateProgramButtons() {
+            document.querySelectorAll('.program-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.program === currentProgram);
+            });
+        }
+
         function updateDayButtons() {
             const buttons = document.querySelectorAll('.day-btn');
             buttons.forEach((btn, index) => {
@@ -1520,7 +1766,7 @@
                         <div class="exercise-tracker">
                             <div class="tracker-dots" id="trackerDots">
                                 ${workout.exercises.map((ex, idx) => {
-                                    const exerciseKey = `${currentDay}-${idx}`;
+                                    const exerciseKey = `${currentProgram}-${currentDay}-${idx}`;
                                     const isCompleted = completedExercises[exerciseKey] || false;
                                     const isActive = idx === currentExercise;
                                     return `<div class="tracker-dot ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"
@@ -1579,7 +1825,7 @@
             `;
 
             workout.exercises.forEach((exercise, index) => {
-                const exerciseKey = `${currentDay}-${index}`;
+                const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
                 const isCompleted = completedExercises[exerciseKey] || false;
                 const isActive = index === currentExercise;
 
@@ -1601,6 +1847,15 @@
 
             html += `</div></div></div>`;
 
+            if (workout.finisher) {
+                html += `
+                    <div class="section-title">🔥 Finisher</div>
+                    <div class="warmup-list">
+                        ${workout.finisher.map(item => `<p>${item}</p>`).join('')}
+                    </div>
+                `;
+            }
+
             if (workout.cooldown) {
                 html += `
                     <div class="section-title">🧊 Cool-down</div>
@@ -1621,7 +1876,7 @@
 
             // Restore timer state if exists
             const savedState = JSON.parse(localStorage.getItem('timerState') || '{}');
-            if (savedState.day === currentDay && savedState.time > 0) {
+            if (savedState.day === currentDay && savedState.program === currentProgram && savedState.time > 0) {
                 currentTime = savedState.time;
                 currentExercise = savedState.exercise || 0;
                 currentRound = savedState.round || 1;
@@ -1952,7 +2207,7 @@
             // Update tracker dots
             const dots = document.querySelectorAll('.tracker-dot');
             dots.forEach((dot, index) => {
-                const exerciseKey = `${currentDay}-${index}`;
+                const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
                 const isCompleted = completedExercises[exerciseKey] || false;
                 dot.className = 'tracker-dot';
                 if (index === currentExercise) dot.classList.add('active');
@@ -1995,7 +2250,7 @@
         }
 
         function toggleExercise(index) {
-            const exerciseKey = `${currentDay}-${index}`;
+            const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
             completedExercises[exerciseKey] = !completedExercises[exerciseKey];
             localStorage.setItem('completedExercises', JSON.stringify(completedExercises));
 
@@ -2091,6 +2346,7 @@
 
         function saveState() {
             const state = {
+                program: currentProgram,
                 day: currentDay,
                 exercise: currentExercise,
                 round: currentRound,
@@ -2199,6 +2455,7 @@
 
             checkWeeklyReset();
             requestNotificationPermission();
+            updateProgramButtons();
 
             // Auto-select today's workout
             const today = new Date().getDay() || 7;
