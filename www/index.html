@@ -151,6 +151,12 @@
             padding: 9px 14px; border-radius: 20px; font-size: .85rem; font-weight: 600; cursor: pointer;
         }
         .chip:active { border-color: var(--acc2); }
+        /* fasting goal picker — compact selectable chips */
+        .goalchips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 2px; }
+        .goalchips .chip { padding: 7px 12px; font-size: .8rem; border-radius: 10px; }
+        .goalchips .chip.sel { border-color: var(--accent, var(--acc1)); color: var(--accent, var(--acc1)); background: color-mix(in srgb, var(--accent, var(--acc1)) 10%, transparent); }
+        .stageline { font-size: .78rem; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+        .stageline b { color: var(--accent, var(--acc1)); font-weight: 700; }
 
         /* ---------- Modal ---------- */
         .overlay {
@@ -232,8 +238,8 @@
         .preset .pi { font-size: 1.5rem; }
         .preset .pn { font-size: .58rem; color: var(--muted); margin-top: 4px; line-height: 1.1; }
 
-        .type-toggle { display: flex; gap: 8px; }
-        .type-opt { flex: 1; text-align: center; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: .85rem; }
+        .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .type-opt { text-align: center; padding: 12px 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: .85rem; }
         .type-opt.sel { border-color: var(--acc1); background: color-mix(in srgb, var(--acc1) 14%, var(--card)); color: var(--text); font-weight: 700; }
         .type-opt small { display: block; color: var(--muted); font-size: .65rem; margin-top: 3px; font-weight: 400; }
 
@@ -358,6 +364,36 @@
         [547*DAY,'18 Months'],[730*DAY,'2 Years'],[1095*DAY,'3 Years']
     ];
     const BUILD_DAYS = [1,3,7,14,21,30,50,75,100,150,200,300,365,500,750,1000];
+
+    /* ---------- Fasting stages — what the body is doing at each hour mark.
+       Times are typical, not exact; they shift with your last meal, activity
+       and metabolism. Wording stays hedged where the evidence is early. ---------- */
+    const FAST_STAGES = [
+        [0,  'Fed state',          'Insulin is elevated while the last meal digests — the body is storing, not burning.'],
+        [4,  'Post-absorptive',    'Insulin falls and the body switches to stored liver glycogen for fuel.'],
+        [8,  'Glycogen rundown',   'Liver glycogen runs low; fat starts mobilizing as the backup fuel.'],
+        [12, 'Fat-burning mode',   'Lipolysis ramps up — fat becomes the main fuel and the first ketones appear.'],
+        [16, 'Ketosis',            'Ketone production is meaningful; many report steady energy and mental clarity. The classic 16:8 target.'],
+        [18, 'Autophagy ramps up', 'Cellular cleanup — damaged proteins and worn-out parts get broken down and recycled (strongest evidence is from animal studies).'],
+        [24, 'Deep ketosis',       'Growth hormone rises sharply to protect muscle; hunger typically comes in waves, then fades.'],
+        [36, 'Peak autophagy zone','Cell-repair signaling is near its peak and insulin sensitivity is resetting.'],
+        [48, 'Immune reset begins','Old immune cells get broken down and stem-cell activity ramps up (early-stage human research).'],
+        [72, 'Full reset',         'The practical ceiling for most protocols — deep metabolic reset. Going past this calls for medical supervision.']
+    ];
+    /* Goal-duration guide — why each fasting length exists. */
+    const FAST_GOALS = [
+        { h: 16, name: '16:8 · The daily driver',   desc: 'Eat within an 8-hour window. Daily fat-burning plus light ketosis — the easiest protocol to sustain and the usual place to start.' },
+        { h: 18, name: '18:6 · Extended daily',      desc: 'A deeper daily push into ketosis with stronger appetite control, still compatible with normal life.' },
+        { h: 24, name: '24h · Full-day reset',       desc: 'Dinner to dinner. A growth-hormone spike, full digestive rest and a solid ketosis block — a popular once-a-week rhythm.' },
+        { h: 36, name: '36h · Monk fast',            desc: 'Skip a whole day and sleep through the far side. Lands in the peak-autophagy zone — commonly run monthly.' },
+        { h: 48, name: '48h · Deep clean',           desc: 'A serious insulin-sensitivity and cell-cleanup reset. Electrolytes stop being optional here — plan it on quiet days.' },
+        { h: 72, name: '72h · Full reset',           desc: 'The immune-cell recycling territory reported in early fasting research. Prep properly and get medical clearance if you take any medication or have any condition.' }
+    ];
+    function stageIdxAt(hours) {
+        let idx = 0;
+        for (let i = 0; i < FAST_STAGES.length; i++) if (hours >= FAST_STAGES[i][0]) idx = i;
+        return idx;
+    }
 
     /* ---------- Presets + knowledge base ---------- */
     const PRESETS = [
@@ -505,6 +541,15 @@
                 'Hit your daily loss limit? Done for the day. Walk away.',
                 'Log every broken-rule day with what pulled you in — your patterns will show up fast.'] },
 
+        { key:'fasting', name:'Fasting', icon:'⏳', color:'#a371f7', type:'fast', cat:'Health',
+          why:'Fat-burning, ketosis, autophagy, insulin reset — benefits stack the longer the fast. Pick a goal, start the clock, watch your body change state.',
+          timeline:[],   // fast type renders its own stage timeline from FAST_STAGES
+          tips:['Water is non-negotiable; add electrolytes (sodium, potassium, magnesium) on anything past ~18h.',
+                'Black coffee and plain tea are fine and blunt hunger.',
+                'Hunger arrives in waves and passes in 15–20 minutes — outlast the wave, don\'t negotiate with it.',
+                'Break the fast gently: protein and fat first, not a feast.',
+                'Feeling dizzy or genuinely unwell? End it and log it — a shorter completed fast still counts.'] },
+
         { key:'custom', name:'Custom', icon:'⭐', color:'#58a6ff', type:'quit', cat:'Custom',
           why:'Your rules, your streak. Define what winning looks like.',
           timeline:[], tips:['Make the goal specific and binary — clear win or reset.','Stack it onto an existing daily anchor.','Track the streak where you will see it every day.'] }
@@ -590,6 +635,16 @@
         return { wins, losses: v.length - wins, total: v.length };
     }
 
+    /* Fasting ('fast') helpers — h.fastStart is the active fast's ISO start (null when
+       idle); h.fasts is the completed-session log [{start, end, hours, goal, hit}]. */
+    function fastMs(h) { return h.fastStart ? Math.max(0, Date.now() - new Date(h.fastStart).getTime()) : 0; }
+    function fastStats(h) {
+        const log = h.fasts || [];
+        const longest = log.reduce((m, f) => Math.max(m, f.hours || 0), 0);
+        const hits = log.filter(f => f.hit).length;
+        return { count: log.length, longest, hits, hitRate: log.length ? Math.round(hits / log.length * 100) : 0 };
+    }
+
     function achievedQuit(ms) { return QUIT_MS.filter(m => ms >= m[0]); }
     function nextQuit(ms) { return QUIT_MS.find(m => ms < m[0]) || null; }
     function achievedBuildCount(days) { return BUILD_DAYS.filter(d => days >= d).length; }
@@ -600,6 +655,12 @@
         const h = Math.floor((ms % DAY) / HOUR), m = Math.floor((ms % HOUR) / MIN), s = Math.floor((ms % MIN) / 1000);
         const p = n => String(n).padStart(2, '0');
         return p(h) + ':' + p(m) + ':' + p(s);
+    }
+    // like fmtClock but hours don't wrap at 24 — a 53h fast reads 53:12:08
+    function fmtFastClock(ms) {
+        const h = Math.floor(ms / HOUR), m = Math.floor((ms % HOUR) / MIN), s = Math.floor((ms % MIN) / 1000);
+        const p = n => String(n).padStart(2, '0');
+        return h + ':' + p(m) + ':' + p(s);
     }
     function fmtMoney(n) {
         if (n >= 1000) return '$' + (n/1000).toFixed(n >= 10000 ? 0 : 1) + 'k';
@@ -631,6 +692,8 @@
             } else if (h.type === 'disc') {
                 const d = discStreak(h);
                 longest = Math.max(longest, d); reclaimed += discCounts(h).total;
+            } else if (h.type === 'fast') {
+                reclaimed += (h.fasts || []).length;   // sessions logged; day-streaks don't apply
             } else {
                 const d = quitMs(h) / DAY;
                 longest = Math.max(longest, d); reclaimed += d;
@@ -650,7 +713,7 @@
     }
 
     function emptyState() {
-        const quick = ['weed','gaming','screen','trading','gym','nicotine'];
+        const quick = ['weed','gaming','screen','trading','fasting','gym'];
         return `<div class="empty">
             <h2>Start tracking</h2>
             <p>Quit something. Build something. Follow your rules.</p>
@@ -664,7 +727,63 @@
         const accent = h.color || '#58a6ff';
         if (h.type === 'build') return buildCard(h, accent);
         if (h.type === 'disc') return discCard(h, accent);
+        if (h.type === 'fast') return fastCard(h, accent);
         return quitCard(h, accent);
+    }
+
+    function fastCard(h, accent) {
+        const goal = h.goalHours || 16;
+        const { count, longest, hitRate } = fastStats(h);
+
+        if (h.fastStart) {   // ── active fast ──
+            const ms = fastMs(h), hours = ms / HOUR;
+            const st = FAST_STAGES[stageIdxAt(hours)];
+            const nx = FAST_STAGES.find(s => s[0] > hours);
+            const pct = Math.min(100, hours / goal * 100);
+            const done = hours >= goal;
+            const ptxt = done ? `Goal reached — ${goal}h fast complete`
+                              : nx ? `Next: ${nx[1]} at ${nx[0]}h` : `Past every mapped stage`;
+            return `<div class="card" style="--accent:${accent}">
+                ${cardTop(h)}
+                <div class="streak">
+                    <div class="big" data-id="${h.id}" data-kind="big">${Math.floor(hours)}</div>
+                    <div class="unit">HOURS FASTED · GOAL ${goal}H</div>
+                    <div class="clock" data-id="${h.id}" data-kind="clock">${fmtFastClock(ms)}</div>
+                    <div class="stageline" data-id="${h.id}" data-kind="stage"><b>${esc(st[1])}</b> — ${esc(st[2])}</div>
+                </div>
+                ${progress(pct, ptxt, Math.round(pct))}
+                <div class="ministats">
+                    ${miniStat(longest ? longest.toFixed(longest >= 10 ? 0 : 1) + 'h' : '—', 'Longest')}
+                    ${miniStat(count, 'Fasts')}
+                    ${miniStat(count ? hitRate + '%' : '—', 'Goals Hit')}
+                </div>
+                <div class="actions">
+                    <button class="btn ${done ? 'btn-good' : 'btn-danger'}" data-action="fast-end" data-id="${h.id}">${done ? '✓ Finish fast' : 'End fast'}</button>
+                </div>
+            </div>`;
+        }
+
+        // ── idle: pick a goal, start when ready ──
+        const last = (h.fasts || [])[Math.max(0, (h.fasts || []).length - 1)];
+        return `<div class="card" style="--accent:${accent}">
+            ${cardTop(h)}
+            <div class="streak">
+                <div class="big">${count}</div>
+                <div class="unit">${count === 1 ? 'FAST LOGGED' : 'FASTS LOGGED'}</div>
+                <div class="clock">${last ? 'Last: ' + (last.hours || 0).toFixed(1) + 'h ' + (last.hit ? '· goal hit ✓' : 'of ' + last.goal + 'h') : 'No fasts yet — pick a goal'}</div>
+            </div>
+            <div class="goalchips">
+                ${FAST_GOALS.map(g => `<button class="chip ${goal === g.h ? 'sel' : ''}" data-action="fast-goal" data-id="${h.id}" data-hours="${g.h}">${g.h}h</button>`).join('')}
+            </div>
+            <div class="stageline">${esc((FAST_GOALS.find(g => g.h === goal) || FAST_GOALS[0]).desc)}</div>
+            <div class="ministats" style="margin-top:12px">
+                ${miniStat(longest ? longest.toFixed(longest >= 10 ? 0 : 1) + 'h' : '—', 'Longest')}
+                ${miniStat(count ? hitRate + '%' : '—', 'Goals Hit')}
+            </div>
+            <div class="actions">
+                <button class="btn btn-good" data-action="fast-start" data-id="${h.id}">▶ Start ${goal}h fast</button>
+            </div>
+        </div>`;
     }
 
     function discCard(h, accent) {
@@ -778,7 +897,7 @@
             <div class="icon">${h.icon || '⭐'}</div>
             <div class="card-head">
                 <div class="name">${esc(h.name)}</div>
-                <div class="cat">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build' : h.type === 'disc' ? 'Rules' : 'Quit'}</div>
+                <div class="cat">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build' : h.type === 'disc' ? 'Rules' : h.type === 'fast' ? 'Fasting' : 'Quit'}</div>
             </div>
             <button class="info-btn" data-action="details" data-id="${h.id}" aria-label="Details">ⓘ</button>
         </div>`;
@@ -796,6 +915,33 @@
     function tick() {
         let dirty = false;
         for (const h of state.habits) {
+            // active fasts: live clock + stage-crossing + goal-hit (in-app path;
+            // closed-app alerts are pre-scheduled by syncScheduledReminders)
+            if (h.type === 'fast') {
+                if (!h.fastStart) continue;
+                const ms = fastMs(h), hours = ms / HOUR;
+                const big = document.querySelector(`.big[data-id="${h.id}"][data-kind="big"]`);
+                const clk = document.querySelector(`.clock[data-id="${h.id}"][data-kind="clock"]`);
+                if (clk) clk.textContent = fmtFastClock(ms);
+                if (big) big.textContent = Math.floor(hours);
+                const idx = stageIdxAt(hours);
+                if (h._lastStage == null) { h._lastStage = idx; dirty = true; }
+                else if (idx > h._lastStage) {
+                    h._lastStage = idx; dirty = true;
+                    const st = FAST_STAGES[idx];
+                    beep(660, 90); haptic(ImpactStyle.Medium);
+                    toast(`${st[0]}h — ${st[1]}`);
+                    notify(`${st[1]} (${st[0]}h)`, st[2]);
+                    const stEl = document.querySelector(`.stageline[data-id="${h.id}"][data-kind="stage"]`);
+                    if (stEl) stEl.innerHTML = `<b>${esc(st[1])}</b> — ${esc(st[2])}`;
+                }
+                if (!h._goalHit && hours >= (h.goalHours || 16)) {
+                    h._goalHit = true; dirty = true;
+                    celebrate(h, (h.goalHours || 16) + 'h fast goal');
+                    render();   // flip the End button to "Finish fast"
+                }
+                continue;
+            }
             if (h.type !== 'quit') continue;
             const ms = quitMs(h);
             const big = document.querySelector(`.big[data-id="${h.id}"][data-kind="big"]`);
@@ -1020,6 +1166,51 @@
         toast('Logged. The log is the win — tomorrow, trade the plan. 📈');
     }
 
+    /* ---------- Fasting ('fast') lifecycle ---------- */
+    function setFastGoal(id, hours) {
+        const h = state.habits.find(x => x.id === id); if (!h || h.fastStart) return;   // locked while a fast runs
+        h.goalHours = hours;
+        save(); render(); haptic(ImpactStyle.Light);
+    }
+    function startFast(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || h.fastStart) return;
+        h.goalHours = h.goalHours || 16;
+        h.fastStart = new Date().toISOString();
+        h._lastStage = 0; h._goalHit = false;
+        save(); render();
+        beep(720, 80); haptic(ImpactStyle.Medium);
+        toast(`Fast started — ${h.goalHours}h goal. Water and electrolytes are your friends.`);
+        maybeAskNotifications();
+        syncScheduledReminders();   // pre-schedule the stage alerts with the OS
+    }
+    function endFast(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || !h.fastStart) return;
+        const hours = fastMs(h) / HOUR, goal = h.goalHours || 16;
+        if (hours >= goal) { finishFast(id); return; }
+        const st = FAST_STAGES[stageIdxAt(hours)];
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>End at ${hours.toFixed(1)}h?</h2>
+            <p class="sub">You're in <b>${esc(st[1])}</b>, ${(goal - hours).toFixed(1)}h short of the ${goal}h goal. Hunger passes in waves — or log it and come back stronger.</p>
+            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="close">Keep fasting</button>
+            <button class="text-btn del" data-action="confirm-fast-end" data-id="${id}">End now &amp; log ${hours.toFixed(1)}h</button>
+        `);
+    }
+    function finishFast(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || !h.fastStart) return;
+        const end = new Date().toISOString();
+        const hours = Math.round(fastMs(h) / HOUR * 10) / 10;
+        const goal = h.goalHours || 16;
+        h.fasts = h.fasts || [];
+        h.fasts.push({ start: h.fastStart, end, hours, goal, hit: hours >= goal });
+        h.fastStart = null; h._lastStage = null; h._goalHit = false;
+        save(); closeSheet(); render();
+        haptic(ImpactStyle.Heavy);
+        if (hours >= goal) { beep(660, 90); setTimeout(() => beep(880, 150), 120); toast(`${goal}h fast complete — logged ${hours}h. Break it gently.`); }
+        else toast(`Logged ${hours}h of ${goal}h. Every logged fast counts.`);
+        syncScheduledReminders();   // drop the now-stale stage alerts
+    }
+
     function deleteHabit(id) {
         state.habits = state.habits.filter(x => x.id !== id);
         save(); closeSheet(); render();
@@ -1040,7 +1231,7 @@
         } else {
             const p = presetByKey('custom');
             draft = { preset: 'custom', name: '', icon: p.icon, color: p.color, type: p.type, cat: p.cat,
-                      goalDays: '', costPerDay: '', hoursPerDay: '', reminderTime: '', reasonsText: '', startNow: true };
+                      goalDays: '', goalHours: 16, costPerDay: '', hoursPerDay: '', reminderTime: '', reasonsText: '', startNow: true };
         }
         renderForm();
     }
@@ -1063,7 +1254,8 @@
         if (keepValues) syncDraftFromInputs();
         const isBuild = draft.type === 'build';
         const isDisc = draft.type === 'disc';
-        const isQuit = !isBuild && !isDisc;
+        const isFast = draft.type === 'fast';
+        const isQuit = !isBuild && !isDisc && !isFast;
         const html = `
             <div class="sheet-grab"></div>
             <h2>${draft.editing ? 'Edit tracker' : 'New tracker'}</h2>
@@ -1095,10 +1287,18 @@
                 <div class="type-opt ${isQuit?'sel':''}" data-action="set-type" data-type="quit">QUIT<small>Time since last slip</small></div>
                 <div class="type-opt ${isBuild?'sel':''}" data-action="set-type" data-type="build">BUILD<small>Daily check-in streak</small></div>
                 <div class="type-opt ${isDisc?'sel':''}" data-action="set-type" data-type="disc">RULES<small>Daily win / loss log</small></div>
+                <div class="type-opt ${isFast?'sel':''}" data-action="set-type" data-type="fast">FAST<small>Timed fasting sessions</small></div>
             </div>
 
+            ${isFast ? `
+            <label class="f">Default fast goal</label>
+            <div class="goalchips" style="--accent:${draft.color || '#a371f7'}">
+                ${FAST_GOALS.map(g => `<button type="button" class="chip ${(parseInt(draft.goalHours) || 16) === g.h ? 'sel' : ''}" data-action="form-goal-hours" data-hours="${g.h}">${g.h}h</button>`).join('')}
+            </div>
+            <div class="stageline">${esc((FAST_GOALS.find(g => g.h === (parseInt(draft.goalHours) || 16)) || FAST_GOALS[0]).desc)}</div>
+            ` : `
             <label class="f">Goal — target days (optional)</label>
-            <input class="f" id="fGoal" type="number" inputmode="numeric" value="${esc(draft.goalDays)}" placeholder="e.g. 30, 90, 365">
+            <input class="f" id="fGoal" type="number" inputmode="numeric" value="${esc(draft.goalDays)}" placeholder="e.g. 30, 90, 365">`}
 
             ${!isQuit ? '' : `
             <div class="row2">
@@ -1147,6 +1347,7 @@
         if (g('fStart') != null) draft.startLocal = g('fStart');
     }
     function setType(t) { syncDraftFromInputs(); draft.type = t; renderForm(); }
+    function setFormGoalHours(hrs) { syncDraftFromInputs(); draft.goalHours = hrs; renderForm(); }
 
     function saveHabit() {
         syncDraftFromInputs();
@@ -1156,6 +1357,7 @@
             name, icon: (draft.icon || '⭐').trim() || '⭐', color: draft.color || '#58a6ff',
             type: draft.type, cat: draft.cat || 'Custom', preset: draft.preset || (draft.editing ? draft.preset : 'custom'),
             goalDays: parseInt(draft.goalDays) || 0,
+            goalHours: parseInt(draft.goalHours) || 16,
             costPerDay: parseFloat(draft.costPerDay) || 0,
             hoursPerDay: parseFloat(draft.hoursPerDay) || 0,
             reminderTime: draft.reminderTime || '',
@@ -1174,7 +1376,8 @@
                 ? new Date(draft.startLocal).toISOString() : new Date().toISOString();
             state.habits.push({
                 id: uid(), createdDate: startDate, startDate,
-                relapses: [], checkIns: [], outcomes: {}, _lastMilestone: 0, ...common
+                relapses: [], checkIns: [], outcomes: {}, fasts: [], fastStart: null,
+                _lastMilestone: 0, ...common
             });
         }
         // If they set a daily reminder, turn notifications on so it actually fires.
@@ -1201,6 +1404,11 @@
             const { wins, losses, total } = discCounts(h);
             body += statsBlock([['Streak', streak + 'd'], ['Best', best + 'd'],
                 ['Win Rate', total ? Math.round(wins / total * 100) + '%' : '—'], ['Wins', wins], ['Losses', losses]]);
+        } else if (h.type === 'fast') {
+            const { count, longest, hitRate } = fastStats(h);
+            const pairs = [['Fasts', count], ['Longest', longest ? longest.toFixed(1) + 'h' : '—'], ['Goals Hit', count ? hitRate + '%' : '—']];
+            if (h.fastStart) pairs.unshift(['Active', (fastMs(h) / HOUR).toFixed(1) + 'h']);
+            body += statsBlock(pairs);
         } else {
             const ms = quitMs(h), best = Math.max(bestMs(h), ms);
             const sav = [];
@@ -1213,6 +1421,23 @@
         const detailReasons = reasonsFor(h);
         if (detailReasons.length) body += `<div class="why">${detailReasons.map(esc).join(' · ')}</div>`;
 
+        // fasting: stage-by-stage explainer + goal guide + session history
+        if (h.type === 'fast') {
+            const curHours = h.fastStart ? fastMs(h) / HOUR : 0;
+            const reachHours = h.fastStart ? curHours : fastStats(h).longest;   // idle: light up what your longest fast reached
+            body += `<div class="sec-title">The fasting timeline — hour by hour</div><div class="tl">` +
+                FAST_STAGES.map(([hr, nm, what]) => `<div class="tl-item ${reachHours >= hr && (h.fastStart || reachHours > 0) ? 'hit' : ''}">
+                    <div class="when">${hr}h — ${esc(nm)}</div><div class="what">${esc(what)}</div></div>`).join('') + `</div>`;
+            body += `<div class="sec-title">Which duration does what</div>` +
+                FAST_GOALS.map(g => `<div class="tl-item" style="padding-bottom:12px;margin-left:8px">
+                    <div class="when" style="font-size:.85rem">${esc(g.name)}</div><div class="what">${esc(g.desc)}</div></div>`).join('');
+            if ((h.fasts || []).length) {
+                body += `<div class="sec-title">Fast log</div>`;
+                body += h.fasts.slice().reverse().slice(0, 8).map(f =>
+                    `<div class="hist-item"><span>${f.hit ? '✅' : '◻'} ${new Date(f.start).toLocaleDateString()}</span><span>${(f.hours || 0).toFixed(1)}h of ${f.goal}h</span></div>`).join('');
+            }
+        }
+
         // milestone timeline
         if (p.timeline && p.timeline.length) {
             const ms = h.type === 'build' ? buildStreak(h) * DAY : h.type === 'disc' ? discStreak(h) * DAY : quitMs(h);
@@ -1224,8 +1449,8 @@
                 }).join('') + `</div>`;
         }
 
-        // milestones list
-        body += `<div class="sec-title">Milestones</div>` + milestoneList(h);
+        // milestones list (fast type: the stage timeline above already covers it)
+        if (h.type !== 'fast') body += `<div class="sec-title">Milestones</div>` + milestoneList(h);
 
         // history
         if (h.type === 'disc' && Object.keys(h.outcomes || {}).length) {
@@ -1247,11 +1472,12 @@
         }
 
         if (h.cat === 'Substance') body += `<div class="disclaimer">Info is general and motivational — not medical advice. Heavy alcohol or other physical dependence can make withdrawal dangerous; talk to a doctor.</div>`;
+        if (h.type === 'fast') body += `<div class="disclaimer">General information, not medical advice — stage timings vary by person and much of the longer-fast research is early. Do not fast if you are pregnant or breastfeeding, underweight, have a history of disordered eating, or take insulin / glucose-lowering medication without a doctor's supervision. Get medical clearance before anything past 48h.</div>`;
 
         openSheet(`
             <div class="sheet-grab"></div>
             <h2>${h.icon} ${esc(h.name)}</h2>
-            <p class="sub">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build habit' : h.type === 'disc' ? 'Rules / discipline log' : 'Quit / abstain'}</p>
+            <p class="sub">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build habit' : h.type === 'disc' ? 'Rules / discipline log' : h.type === 'fast' ? 'Timed fasting sessions' : 'Quit / abstain'}</p>
             ${body}
             <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="edit" data-id="${h.id}">Edit tracker</button>
             <button class="text-btn" data-action="close">Close</button>
@@ -1357,11 +1583,13 @@
     function reminderBody(h) {
         if (h.type === 'build') return `Check in for "${h.name}" and keep the streak alive.`;
         if (h.type === 'disc') return `Trading day. Trade the plan, not the chase — log your session after close.`;
+        if (h.type === 'fast') return `Time to start your ${h.goalHours || 16}h fast — last meal, then the clock runs.`;
         return `Stay strong — keep your "${h.name}" streak going.`;
     }
 
     const REMIND_ID = 100000;   // daily-reminder notification ids start here
     const MILE_ID   = 200000;   // milestone notification ids start here
+    const FAST_ID   = 300000;   // fasting stage-alert ids start here
     const MAX_SCHEDULED = 60;   // stay safely under the iOS 64-pending limit
 
     async function notifPermitted() {
@@ -1414,8 +1642,28 @@
                 }
             }
 
-            // 2) Upcoming quit milestones — one-off alerts at their known future times.
+            // 2) Active-fast stage alerts — one-offs at each upcoming stage boundary up
+            //    to the goal, plus the goal itself ("you just entered ketosis" while
+            //    closed). Re-derived from state on every sync; ends/edits drop them.
             const now = Date.now();
+            let fid = FAST_ID;
+            for (const h of state.habits) {
+                if (h.type !== 'fast' || !h.fastStart) continue;
+                const startMs = new Date(h.fastStart).getTime();
+                const goal = h.goalHours || 16;
+                for (const [hr, nm, what] of FAST_STAGES) {
+                    if (hr === 0 || hr > goal) continue;
+                    const at = startMs + hr * HOUR;
+                    const title = hr === goal ? `Goal reached — ${nm} (${hr}h)` : `${nm} (${hr}h)`;
+                    if (at > now) list.push({ id: fid++, title, body: what, schedule: { at: new Date(at), allowWhileIdle: true }, iconColor: '#58a6ff' });
+                }
+                const goalAt = startMs + goal * HOUR;
+                if (goalAt > now && !FAST_STAGES.some(s => s[0] === goal)) {
+                    list.push({ id: fid++, title: `Goal reached — ${goal}h`, body: `Your ${goal}h fast is complete. Break it gently: protein and fat first.`, schedule: { at: new Date(goalAt), allowWhileIdle: true }, iconColor: '#58a6ff' });
+                }
+            }
+
+            // 3) Upcoming quit milestones — one-off alerts at their known future times.
             const upcoming = [];
             for (const h of state.habits) {
                 if (h.type !== 'quit' || !h.startDate) continue;
@@ -1522,6 +1770,11 @@
             case 'disc-win': discWin(id); break;
             case 'disc-loss': discLoss(id); break;
             case 'confirm-disc-loss': confirmDiscLoss(id); break;
+            case 'fast-goal': setFastGoal(id, parseInt(el.dataset.hours)); break;
+            case 'fast-start': startFast(id); break;
+            case 'fast-end': endFast(id); break;
+            case 'confirm-fast-end': finishFast(id); break;
+            case 'form-goal-hours': setFormGoalHours(parseInt(el.dataset.hours)); break;
             case 'select-preset': selectPreset(el.dataset.preset); break;
             case 'set-type': setType(el.dataset.type); break;
             case 'save-habit': saveHabit(); break;
