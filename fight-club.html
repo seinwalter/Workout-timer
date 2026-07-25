@@ -952,9 +952,96 @@
             animation: pulse 2s infinite;
         }
 
+        .omad-card {
+            margin-top: 18px;
+            padding: 16px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 16px;
+            border: 0.5px solid var(--hairline);
+        }
+
+        .omad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .omad-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+        }
+
+        .omad-status {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .omad-body {
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .omad-countdown {
+            font-size: 2.4rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .omad-countdown-label {
+            font-size: 0.62rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .omad-time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            border: 0.5px solid var(--hairline);
+        }
+
+        .omad-label {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .omad-time-input {
+            background: rgba(120, 120, 128, 0.24);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            font-family: inherit;
+            color-scheme: dark;
+            -webkit-appearance: none;
+        }
+
         /* ===== Focus mode: while the timer runs, hide everything that isn't
            the clock so the whole workout view fits on screen without
            scrolling. ===== */
+        body.timer-active .omad-card,
         body.timer-active .program-selector,
         body.timer-active .day-selector,
         body.timer-active .progress-bar,
@@ -1172,6 +1259,24 @@
         </div>
 
         <div id="workoutContainer"></div>
+
+        <div class="omad-card" id="omadCard">
+            <div class="omad-header">
+                <div>
+                    <div class="omad-title">🍽 OMAD Fast</div>
+                    <div class="omad-status" id="omadStatus">Off</div>
+                </div>
+                <div class="toggle-switch" id="omadToggle" onclick="toggleOmad()"></div>
+            </div>
+            <div class="omad-body" id="omadBody" style="display: none;">
+                <div class="omad-countdown" id="omadCountdown">--:--:--</div>
+                <div class="omad-countdown-label" id="omadCountdownLabel">until meal time</div>
+                <div class="omad-time-row">
+                    <label class="omad-label" for="omadTime">Daily meal time</label>
+                    <input type="time" id="omadTime" class="omad-time-input" value="18:00" onchange="setOmadTime(this.value)">
+                </div>
+            </div>
+        </div>
 
         <div class="stats">
             <div class="stat">
@@ -1400,6 +1505,114 @@
             } catch (e) {
                 // already delivered or not pending — fine
             }
+        }
+
+        // ===== OMAD fast scheduler =====
+        // One meal a day: shows a live countdown to the next meal and fires
+        // daily repeating notifications (30-min heads-up + meal-time alert)
+        // that work even when the app is closed.
+        const OMAD_MEAL_ID = 2001;
+        const OMAD_PREALERT_ID = 2002;
+        let omad = JSON.parse(localStorage.getItem('omad') || '{"enabled": false, "time": "18:00"}');
+
+        function omadNextMeal() {
+            const [h, m] = omad.time.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+            return d;
+        }
+
+        function omadTimeLabel() {
+            const [h, m] = omad.time.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        }
+
+        async function scheduleOmadNotifications() {
+            if (!LocalNotifications) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: [{ id: OMAD_MEAL_ID }, { id: OMAD_PREALERT_ID }]
+                });
+                if (!omad.enabled) return;
+
+                const [h, m] = omad.time.split(':').map(Number);
+                const pre = new Date();
+                pre.setHours(h, m, 0, 0);
+                pre.setMinutes(pre.getMinutes() - 30);
+
+                // schedule.on = daily repeating calendar trigger on iOS
+                await LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            id: OMAD_MEAL_ID,
+                            title: '🍽 Meal Time!',
+                            body: 'Fast complete — time to eat. Protein first, veggies for volume.',
+                            schedule: { on: { hour: h, minute: m }, allowWhileIdle: true },
+                            sound: 'default'
+                        },
+                        {
+                            id: OMAD_PREALERT_ID,
+                            title: 'Meal in 30 minutes',
+                            body: 'Start prepping now — never decide what to eat ravenous.',
+                            schedule: { on: { hour: pre.getHours(), minute: pre.getMinutes() }, allowWhileIdle: true },
+                            sound: 'default'
+                        }
+                    ]
+                });
+            } catch (e) {
+                console.log('OMAD scheduling failed:', e);
+            }
+        }
+
+        function updateOmadUI() {
+            const toggle = document.getElementById('omadToggle');
+            const body = document.getElementById('omadBody');
+            const status = document.getElementById('omadStatus');
+            const input = document.getElementById('omadTime');
+            if (!toggle) return;
+
+            toggle.classList.toggle('active', omad.enabled);
+            body.style.display = omad.enabled ? 'block' : 'none';
+            status.textContent = omad.enabled
+                ? `Daily meal at ${omadTimeLabel()} • alerts on`
+                : 'Off';
+            input.value = omad.time;
+            omadTick();
+        }
+
+        function omadTick() {
+            if (!omad.enabled) return;
+            const el = document.getElementById('omadCountdown');
+            if (!el) return;
+            const diff = Math.max(0, omadNextMeal().getTime() - Date.now());
+            const hh = Math.floor(diff / 3600000);
+            const mm = Math.floor((diff % 3600000) / 60000);
+            const ss = Math.floor((diff % 60000) / 1000);
+            el.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+        }
+
+        function toggleOmad() {
+            omad.enabled = !omad.enabled;
+            localStorage.setItem('omad', JSON.stringify(omad));
+            if (omad.enabled) requestNotificationPermission();
+            scheduleOmadNotifications();
+            updateOmadUI();
+            playBeep(700, 80);
+            if (omad.enabled) {
+                showNotification('OMAD Fast On', `You'll be alerted at ${omadTimeLabel()} daily`);
+            }
+        }
+
+        function setOmadTime(value) {
+            if (!/^\d{2}:\d{2}$/.test(value)) return;
+            omad.time = value;
+            localStorage.setItem('omad', JSON.stringify(omad));
+            scheduleOmadNotifications();
+            updateOmadUI();
+            playBeep(600, 80);
         }
 
         const PROGRAMS = {
@@ -2568,6 +2781,11 @@
             checkWeeklyReset();
             requestNotificationPermission();
             updateProgramButtons();
+
+            // OMAD: restore UI and re-assert the daily alerts
+            updateOmadUI();
+            scheduleOmadNotifications();
+            setInterval(omadTick, 1000);
 
             // Auto-select today's workout
             const today = new Date().getDay() || 7;
