@@ -952,6 +952,96 @@
             animation: pulse 2s infinite;
         }
 
+        /* ===== Focus mode: while the timer runs, hide everything that isn't
+           the clock so the whole workout view fits on screen without
+           scrolling. ===== */
+        body.timer-active .program-selector,
+        body.timer-active .day-selector,
+        body.timer-active .progress-bar,
+        body.timer-active .workout-title,
+        body.timer-active .workout-meta,
+        body.timer-active .collapsible-section,
+        body.timer-active .section-title,
+        body.timer-active #workoutContainer > .warmup-list,
+        body.timer-active .complete-btn,
+        body.timer-active .stats {
+            display: none;
+        }
+
+        body.timer-active .header {
+            margin-bottom: 8px;
+            padding: 0;
+        }
+
+        body.timer-active .header h1 {
+            font-size: 1.2rem;
+            letter-spacing: -0.3px;
+        }
+
+        body.timer-active .settings-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            top: -4px;
+        }
+
+        body.timer-active .timer-section {
+            padding: 12px 12px;
+            margin-bottom: 0;
+        }
+
+        body.timer-active .current-exercise-display {
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+
+        body.timer-active .exercise-progress {
+            margin-bottom: 5px;
+            font-size: 0.58rem;
+            padding: 3px 8px;
+        }
+
+        body.timer-active .current-exercise-name {
+            font-size: 1.3rem;
+            margin-bottom: 3px;
+        }
+
+        body.timer-active .current-exercise-details {
+            font-size: 0.82rem;
+        }
+
+        body.timer-active .next-up-display {
+            margin-top: 8px;
+            padding: 6px 10px;
+        }
+
+        body.timer-active .phase-indicator {
+            margin-bottom: 8px;
+        }
+
+        body.timer-active .timer-display-container {
+            margin: 6px 0 10px 0;
+        }
+
+        body.timer-active .exercise-tracker {
+            margin-top: 10px;
+        }
+
+        body.timer-active .timer-controls {
+            margin-top: 10px;
+        }
+
+        @media (max-height: 750px) {
+            body.timer-active .circular-timer {
+                width: 210px;
+                height: 210px;
+            }
+
+            body.timer-active .timer-display {
+                font-size: 2.8rem;
+            }
+        }
+
         .notification {
             position: fixed;
             top: calc(var(--safe-top) + 10px);
@@ -1297,6 +1387,18 @@
                 });
             } catch (e) {
                 // nothing pending
+            }
+        }
+
+        // Cancel a single chain entry (chain index i = end of timeline segment i)
+        async function cancelChainNotification(chainIndex) {
+            if (!LocalNotifications || chainIndex < 0 || chainIndex >= MAX_SCHEDULED_NOTIFICATIONS) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: [{ id: PHASE_NOTIFICATION_BASE_ID + chainIndex }]
+                });
+            } catch (e) {
+                // already delivered or not pending — fine
             }
         }
 
@@ -1866,7 +1968,7 @@
             }
 
             html += `
-                <button class="timer-btn full primary" onclick="completeWorkout()" style="margin-top: 25px;">
+                <button class="timer-btn full primary complete-btn" onclick="completeWorkout()" style="margin-top: 25px;">
                     <span>✓ Complete Workout</span>
                 </button>
             `;
@@ -1998,12 +2100,16 @@
                 timelineIndex = idx;
 
                 if (singleStep) {
-                    // Live flip while the app is awake: beep, banner, and swap
-                    // the pending system notification for the in-app one.
+                    // Live flip while the app is awake: beep + in-app banner.
+                    // Cancel ONLY the system notification for this one flip —
+                    // never touch the rest of the chain. (Rebuilding the whole
+                    // chain here opened a window where iOS could freeze the app
+                    // between cancel and re-schedule, silencing every remaining
+                    // notification for the workout.)
                     playBeep(1000, 200);
                     const msg = segmentEnterMessage(timeline[idx], prev);
                     showNotification(msg.title, msg.body);
-                    schedulePhaseEndNotification();
+                    cancelChainNotification(idx - 1);
                 } // Multi-segment jump = catching up after lock: stay silent,
                   // the system notifications already covered those flips.
                 updateLiveActivity();
@@ -2038,6 +2144,10 @@
                 schedulePhaseEndNotification();
                 startLiveActivity();
 
+                // Focus mode: collapse everything but the clock
+                document.body.classList.add('timer-active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
                 document.getElementById('playPauseBtn').innerHTML = '<span>⏸ Pause</span>';
                 playBeep(600, 100);
                 updateTimerDisplay();
@@ -2066,6 +2176,7 @@
             timeline = [];
             cancelPhaseEndNotification();
             endLiveActivity();
+            document.body.classList.remove('timer-active');
             const btn = document.getElementById('playPauseBtn');
             if (btn) btn.innerHTML = '<span>▶ Start</span>';
         }
@@ -2220,8 +2331,9 @@
                 item.classList.toggle('active', index === currentExercise);
             });
 
+            // Don't yank the page away from the clock while the timer runs
             const activeExercise = document.getElementById(`exercise-${currentExercise}`);
-            if (activeExercise) {
+            if (activeExercise && !document.body.classList.contains('timer-active')) {
                 activeExercise.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
