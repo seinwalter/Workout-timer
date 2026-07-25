@@ -759,6 +759,7 @@
                 </div>
                 <div class="actions">
                     <button class="btn ${done ? 'btn-good' : 'btn-danger'}" data-action="fast-end" data-id="${h.id}">${done ? '✓ Finish fast' : 'End fast'}</button>
+                    <button class="btn" style="flex:0 0 auto;padding:13px 14px;background:var(--card2);border:1px solid var(--line);color:var(--muted)" data-action="fast-adjust" data-id="${h.id}">Adjust start</button>
                 </div>
             </div>`;
         }
@@ -1196,6 +1197,43 @@
             <button class="text-btn del" data-action="confirm-fast-end" data-id="${id}">End now &amp; log ${hours.toFixed(1)}h</button>
         `);
     }
+    /* Backdate an active fast — "I actually started at dinner, hours ago."
+       Chips shift the start back from NOW; the picker allows any past moment. */
+    function adjustFastStart(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || !h.fastStart) return;
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>When did the fast really start?</h2>
+            <p class="sub">Your fast is timed from your last meal — set it back to when you actually stopped eating.</p>
+            <div class="goalchips" style="--accent:${h.color || '#a371f7'}">
+                ${[[30,'30m ago'],[60,'1h ago'],[120,'2h ago'],[240,'4h ago'],[480,'8h ago']].map(([m,l]) =>
+                    `<button type="button" class="chip" data-action="fa-chip" data-mins="${m}">${l}</button>`).join('')}
+            </div>
+            <label class="f" style="margin-top:14px">Exact start</label>
+            <input class="f" id="faStart" type="datetime-local" value="${isoToLocal(h.fastStart)}" max="${nowLocal()}">
+            <button class="save-btn" data-action="confirm-fast-adjust" data-id="${id}">Save start time</button>
+            <button class="text-btn" data-action="close">Cancel</button>
+        `);
+    }
+    function confirmFastAdjust(id) {
+        const h = state.habits.find(x => x.id === id); if (!h || !h.fastStart) return;
+        const v = (document.getElementById('faStart') || {}).value;
+        const t = v ? new Date(v).getTime() : NaN;
+        if (!v || Number.isNaN(t)) { toast('Pick a valid start time.'); return; }
+        if (t > Date.now()) { toast('Start time can\'t be in the future.'); return; }
+        h.fastStart = new Date(t).toISOString();
+        // Rebaseline silently: no toast storm for stages crossed hours ago, no
+        // retro-celebration if the corrected start already clears the goal.
+        const hours = fastMs(h) / HOUR;
+        h._lastStage = stageIdxAt(hours);
+        h._goalHit = hours >= (h.goalHours || 16);
+        save(); closeSheet(); render();
+        haptic(ImpactStyle.Medium);
+        const st = FAST_STAGES[stageIdxAt(hours)];
+        toast(`Start adjusted — ${hours.toFixed(1)}h in. ${st[1]}.`);
+        syncScheduledReminders();   // stage alerts re-derive from the corrected start
+    }
+
     function finishFast(id) {
         const h = state.habits.find(x => x.id === id); if (!h || !h.fastStart) return;
         const end = new Date().toISOString();
@@ -1774,6 +1812,13 @@
             case 'fast-start': startFast(id); break;
             case 'fast-end': endFast(id); break;
             case 'confirm-fast-end': finishFast(id); break;
+            case 'fast-adjust': adjustFastStart(id); break;
+            case 'fa-chip': {
+                const inp = document.getElementById('faStart');
+                if (inp) inp.value = isoToLocal(new Date(Date.now() - parseInt(el.dataset.mins) * MIN).toISOString());
+                break;
+            }
+            case 'confirm-fast-adjust': confirmFastAdjust(id); break;
             case 'form-goal-hours': setFormGoalHours(parseInt(el.dataset.hours)); break;
             case 'select-preset': selectPreset(el.dataset.preset); break;
             case 'set-type': setType(el.dataset.type); break;
