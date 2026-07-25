@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Initial setup for the RAW DAWG iOS app.
+# Initial setup for the PROTOCOL iOS app.
 # Run this ONCE on your Mac (it creates the native Xcode project).
 
 set -e
 
-echo "🔥 Setting up RAW DAWG iOS app..."
+echo "▲ Setting up PROTOCOL iOS app..."
 echo ""
 
 # Must be on a Mac
@@ -24,8 +24,20 @@ fi
 echo "✅ Xcode detected"
 echo ""
 
+# Must be run from the app folder (the one with package.json + raw-dawg.html)
+if [ ! -f package.json ] || [ ! -f raw-dawg.html ]; then
+  echo "❌ Run this from the app folder — the one containing package.json and raw-dawg.html."
+  exit 1
+fi
+
 echo "📦 Installing Capacitor dependencies..."
 npm install
+
+if [ ! -e node_modules/.bin/cap ]; then
+  echo "❌ Capacitor CLI missing after npm install."
+  echo "   Fix: rm -rf node_modules package-lock.json && npm install   (then re-run this script)"
+  exit 1
+fi
 
 # Stage the web app for Capacitor
 echo "📋 Copying raw-dawg.html → www/index.html..."
@@ -38,12 +50,22 @@ if [ ! -d "ios" ]; then
   npx cap add ios
 fi
 
-# Generate the app icon + splash screens from assets/ into the iOS project
+# Generate the app icon + splash screens from assets/ into the iOS project.
+# Scoped package name on purpose — bare "capacitor-assets" resolves to a dead
+# registry stub when node_modules is missing ("could not determine executable").
 echo "🎨 Generating app icon & splash screens..."
-npx capacitor-assets generate --ios
+npx --yes @capacitor/assets generate --ios
 
 echo "🔄 Syncing web assets into the iOS project..."
 npx cap sync
+
+# If the Xcode project pre-dates the rename, sync the display name into it
+# (a freshly created project already gets it from capacitor.config.json).
+PLIST="ios/App/App/Info.plist"
+if [ -f "$PLIST" ] && command -v /usr/libexec/PlistBuddy &> /dev/null; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName PROTOCOL" "$PLIST" 2>/dev/null \
+    && echo "🏷  Display name set to PROTOCOL" || true
+fi
 
 echo ""
 echo "✅ Setup complete!"
