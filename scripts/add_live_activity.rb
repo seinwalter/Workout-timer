@@ -111,6 +111,26 @@ else
 end
 
 # ---------------------------------------------------------------
+# Build step: every Cmd+R copies www/ and native/*.swift into the
+# project (scripts/xcode-sync.sh). Added to both targets so the widget
+# also compiles the latest Swift.
+# ---------------------------------------------------------------
+puts '🔁 Adding the sync build step...'
+SYNC_PHASE = 'Sync Fight Club web + native'
+[app_target, widget_target].each do |t|
+  phase = t.shell_script_build_phases.find { |p| p.name == SYNC_PHASE }
+  unless phase
+    phase = t.new_shell_script_build_phase(SYNC_PHASE)
+    t.build_phases.delete(phase)
+    t.build_phases.unshift(phase)
+  end
+  phase.shell_path = '/bin/bash'
+  phase.shell_script = "\"${SRCROOT}/../../scripts/xcode-sync.sh\"\n"
+  phase.always_out_of_date = '1' if phase.respond_to?(:always_out_of_date=)
+  t.build_configurations.each { |c| c.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO' }
+end
+
+# ---------------------------------------------------------------
 # HealthKit: entitlement file + build setting + capability flag
 # ---------------------------------------------------------------
 puts '❤️  Enabling HealthKit...'
@@ -144,6 +164,33 @@ attrs = project.root_object.attributes['TargetAttributes'] ||= {}
 target_attrs = attrs[app_target.uuid] ||= {}
 caps = target_attrs['SystemCapabilities'] ||= {}
 caps['com.apple.HealthKit'] = { 'enabled' => '1' }
+
+# ---------------------------------------------------------------
+# Build phase: copy www/ into the app on every build, so Cmd+R in
+# Xcode always runs the latest web files (no cap sync needed).
+# ---------------------------------------------------------------
+SYNC_PHASE = 'Sync web files from www'
+sync_phase = app_target.shell_script_build_phases.find { |ph| ph.name == SYNC_PHASE }
+unless sync_phase
+  puts '🔁 Adding the web-sync build phase...'
+  sync_phase = app_target.new_shell_script_build_phase(SYNC_PHASE)
+  app_target.build_phases.delete(sync_phase)
+  app_target.build_phases.unshift(sync_phase)   # run before anything is copied
+end
+sync_phase.shell_script = <<~'SH'
+  # Keep the bundled web app identical to www/ (edit files in www/, then Cmd+R)
+  WWW="${SRCROOT}/../../www"
+  DEST="${SRCROOT}/App/public"
+  if [ -d "$WWW" ]; then
+    rsync -a --exclude 'cordova.js' --exclude 'cordova_plugins.js' "$WWW/" "$DEST/"
+    echo "Synced www/ -> App/public"
+  fi
+SH
+sync_phase.always_out_of_date = '1' if sync_phase.respond_to?(:always_out_of_date=)
+app_target.build_configurations.each do |config|
+  # Xcode 15+ sandboxes build scripts; this one needs to read www/
+  config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+end
 
 project.save
 puts '💾 Project saved.'
