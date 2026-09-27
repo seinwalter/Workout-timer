@@ -41,6 +41,12 @@ PLIST="ios/App/App/Info.plist"
 if [ -f "$PLIST" ] && command -v /usr/libexec/PlistBuddy &> /dev/null; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName PROTOCOL" "$PLIST" 2>/dev/null \
     && echo "🏷  Display name set to PROTOCOL" || true
+  # Show the app's Documents folder (backups) in Files › On My iPhone › PROTOCOL.
+  for KEY in UIFileSharingEnabled LSSupportsOpeningDocumentsInPlace; do
+    /usr/libexec/PlistBuddy -c "Set :$KEY true" "$PLIST" 2>/dev/null \
+      || /usr/libexec/PlistBuddy -c "Add :$KEY bool true" "$PLIST" 2>/dev/null || true
+  done
+  echo "📁 Backups folder enabled in the Files app"
 fi
 
 echo ""
