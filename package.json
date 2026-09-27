@@ -2,7 +2,7 @@
   "name": "raw-dawg-tracker",
   "version": "1.0.0",
   "private": true,
-  "description": "RAW DAWG — habit & addiction life tracker. Native iOS app via Capacitor (wraps the single-file web app in www/).",
+  "description": "PROTOCOL — minimal daily discipline tracker (habits, quitting, trading rules, fasting). Native iOS app via Capacitor (wraps the single-file web app in www/).",
   "homepage": "https://seinwalter.github.io/Workout-timer/raw-dawg.html",
   "dependencies": {
     "@capacitor/core": "^6.1.2",
@@ -11,7 +11,10 @@
     "@capacitor/haptics": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
     "@capacitor/local-notifications": "^6.1.0",
-    "@capacitor/app": "^6.0.0"
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/preferences": "^6.0.4",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/share": "^6.0.4"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"
