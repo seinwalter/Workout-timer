@@ -1,19 +1,12 @@
 #!/bin/bash
 
-# Update Fight Club iOS App
-# Run this script after making changes to fight-club.html
+# Push web changes to the iOS project.
+# The app lives in www/ (index.html, css/, js/, fonts/) — edit those files directly.
 
-echo "📱 Updating Fight Club iOS App..."
+set -e
+cd "$(dirname "$0")"
 
-# Copy updated HTML to www directory
-echo "📋 Copying fight-club.html to www/index.html..."
-cp fight-club.html www/index.html
+echo "🔄 Syncing www/ to the iOS project..."
+npx cap sync ios
 
-# Sync changes to iOS
-echo "🔄 Syncing to iOS project..."
-npx cap sync
-
-echo "✅ Done! Now open Xcode and rebuild:"
-echo "   npx cap open ios"
-echo ""
-echo "Then press Cmd+R in Xcode to build and run on your iPhone."
+echo "✅ Done! Build in Xcode with Cmd+R (npx cap open ios to open it)."

@@ -6,6 +6,7 @@
 # - Embeds the widget in the app, sets signing/deployment settings
 # - Adds NSSupportsLiveActivities to the app Info.plist
 # - Points Main.storyboard at MyViewController
+# - Adds the HealthKit plugin, entitlement and Info.plist usage strings
 #
 # Run via ./setup-live-activity.sh (which installs the xcodeproj gem if needed)
 
@@ -30,6 +31,7 @@ abort '❌ App target not found' unless app_target
 puts '📋 Copying Swift sources...'
 FileUtils.cp(File.join(REPO, 'native/App/LiveActivityPlugin.swift'), APP_DIR)
 FileUtils.cp(File.join(REPO, 'native/App/MyViewController.swift'), APP_DIR)
+FileUtils.cp(File.join(REPO, 'native/App/HealthKitPlugin.swift'), APP_DIR)
 FileUtils.cp(File.join(REPO, 'native/Shared/WorkoutActivityAttributes.swift'), APP_DIR)
 FileUtils.mkdir_p(WIDGET_DIR)
 FileUtils.cp(File.join(REPO, 'native/Widget/FightClubWidgetBundle.swift'), WIDGET_DIR)
@@ -51,6 +53,7 @@ end
 puts '🔗 Adding files to App target...'
 add_file_once(app_group, app_target, File.join(APP_DIR, 'LiveActivityPlugin.swift'))
 add_file_once(app_group, app_target, File.join(APP_DIR, 'MyViewController.swift'))
+add_file_once(app_group, app_target, File.join(APP_DIR, 'HealthKitPlugin.swift'))
 shared_ref = add_file_once(app_group, app_target, File.join(APP_DIR, 'WorkoutActivityAttributes.swift'))
 
 # ---------------------------------------------------------------
@@ -107,6 +110,41 @@ else
   app_target.add_dependency(widget_target)
 end
 
+# ---------------------------------------------------------------
+# HealthKit: entitlement file + build setting + capability flag
+# ---------------------------------------------------------------
+puts '❤️  Enabling HealthKit...'
+entitlements_rel = nil
+app_target.build_configurations.each do |config|
+  entitlements_rel ||= config.build_settings['CODE_SIGN_ENTITLEMENTS']
+end
+entitlements_rel ||= 'App/App.entitlements'
+entitlements_path = File.join(REPO, 'ios/App', entitlements_rel)
+unless File.exist?(entitlements_path)
+  File.write(entitlements_path, <<~PLIST)
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+    </dict>
+    </plist>
+  PLIST
+  app_group.new_file(entitlements_path) unless app_group.files.any? { |f| f.path&.end_with?(File.basename(entitlements_path)) }
+end
+if RUBY_PLATFORM.include?('darwin')
+  unless system("/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.healthkit' '#{entitlements_path}' >/dev/null 2>&1")
+    system("/usr/libexec/PlistBuddy -c 'Add :com.apple.developer.healthkit bool true' '#{entitlements_path}'")
+    system("/usr/libexec/PlistBuddy -c 'Add :com.apple.developer.healthkit.access array' '#{entitlements_path}'")
+  end
+end
+app_target.build_configurations.each do |config|
+  config.build_settings['CODE_SIGN_ENTITLEMENTS'] = entitlements_rel
+end
+attrs = project.root_object.attributes['TargetAttributes'] ||= {}
+target_attrs = attrs[app_target.uuid] ||= {}
+caps = target_attrs['SystemCapabilities'] ||= {}
+caps['com.apple.HealthKit'] = { 'enabled' => '1' }
+
 project.save
 puts '💾 Project saved.'
 
@@ -117,6 +155,15 @@ info_plist = File.join(APP_DIR, 'Info.plist')
 unless system("/usr/libexec/PlistBuddy -c 'Print :NSSupportsLiveActivities' '#{info_plist}' >/dev/null 2>&1")
   system("/usr/libexec/PlistBuddy -c 'Add :NSSupportsLiveActivities bool true' '#{info_plist}'")
   puts '✅ NSSupportsLiveActivities added to Info.plist'
+end
+{
+  'NSHealthShareUsageDescription' => 'Fight Club reads your body weight to chart progress and estimate calories.',
+  'NSHealthUpdateUsageDescription' => 'Fight Club saves your workouts and active calories to Apple Health.'
+}.each do |key, text|
+  unless system("/usr/libexec/PlistBuddy -c 'Print :#{key}' '#{info_plist}' >/dev/null 2>&1")
+    system("/usr/libexec/PlistBuddy -c \"Add :#{key} string #{text}\" '#{info_plist}'")
+    puts "✅ #{key} added to Info.plist"
+  end
 end
 
 # ---------------------------------------------------------------
@@ -138,5 +185,5 @@ if File.exist?(storyboard)
 end
 
 puts ''
-puts '🎉 Live Activity setup complete!'
+puts '🎉 Live Activity + HealthKit setup complete!'
 puts 'Next: npx cap open ios  →  select your iPhone  →  Cmd+R'

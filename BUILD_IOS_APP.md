@@ -84,11 +84,14 @@ Click the **Play button** (▶️) in Xcode toolbar, or press `Cmd+R`
 
 ## Updating the App
 
-After making changes to `fight-club.html`:
+The app lives in `www/` (`index.html`, `css/app.css`, `js/*.js`). Edit those files directly, then:
 
 ```bash
+# Run the logic tests (no dependencies)
+npm test
+
 # Copy changes to iOS
-npx cap copy
+npx cap sync ios
 
 # Open Xcode
 npx cap open ios
