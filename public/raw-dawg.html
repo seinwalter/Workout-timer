@@ -14,17 +14,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         :root {
-            --bg0: #0d1117;
-            --bg1: #131924;
-            --card: #151b26;
-            --card2: #1a2130;
-            --line: #262e3d;
-            --text: #e6e9ef;
-            --muted: #8a94a6;
+            --bg0: #0b0e14;
+            --bg1: #11151d;
+            --card: #141923;
+            --card2: #1b2130;
+            --line: #252c3a;
+            --faint: #232a38;
+            --text: #e8ebf1;
+            --muted: #8f99ab;
             --acc1: #58a6ff;
             --acc2: #85c0ff;
             --danger: #f85149;
             --good: #3fb950;
+            --warn: #d29922;
         }
 
         html { -webkit-text-size-adjust: 100%; }
@@ -42,101 +44,196 @@
                 calc(env(safe-area-inset-bottom) + 32px) env(safe-area-inset-left);
         }
 
-        .wrap { max-width: 540px; margin: 0 auto; padding: 16px 14px 0; }
+        .wrap { max-width: 540px; margin: 0 auto; padding: 16px 16px 0; }
 
-        /* ---------- Header (minimal wordmark) ---------- */
-        .header { text-align: center; padding: 14px 0 16px; position: relative; min-height: 48px; }
-        .header h1 {
-            font-size: 1.05rem; font-weight: 700; letter-spacing: .42em;
-            text-indent: .42em;  /* optically re-center the letterspaced wordmark */
-            color: var(--text); text-transform: uppercase;
-        }
+        /* ---------- Header: date + large "Today" title, settings and + ---------- */
+        .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 18px 0 14px; }
+        .top .date { font-size: .8rem; color: var(--muted); font-weight: 700; letter-spacing: .3px; text-transform: uppercase; }
+        .top h1 { font-size: 2rem; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; margin-top: 2px; }
+        .top .btns { display: flex; gap: 8px; flex: 0 0 auto; }
         .hdr-btn {
-            position: absolute; top: 2px; width: 44px; height: 44px; border-radius: 22px;
+            width: 44px; height: 44px; border-radius: 22px;
             background: var(--card); border: 1px solid var(--line); color: var(--muted);
             font-size: 1.15rem; cursor: pointer; transition: transform .25s;
             display: flex; align-items: center; justify-content: center;
         }
-        .gear { left: 0; }
         .gear:active { transform: rotate(60deg); color: var(--acc2); }
-        .add-btn { right: 0; color: var(--text); font-size: 1.3rem; }
+        .add-btn { color: var(--text); font-size: 1.3rem; }
         .add-btn:active { transform: scale(.92); border-color: var(--acc1); }
 
-        /* ---------- Summary stats ---------- */
-        .summary {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 4px 0 18px;
+        /* ---------- Day progress line ---------- */
+        .dayprog {
+            display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line);
+            border-radius: 16px; padding: 12px 14px; margin-bottom: 6px;
         }
-        .stat {
-            background: var(--card); border: 1px solid var(--line); border-radius: 14px;
-            padding: 12px 6px; text-align: center;
-        }
-        .stat b { display: block; font-size: 1.45rem; font-weight: 800; line-height: 1; }
-        .stat span { display: block; font-size: .75rem; color: var(--muted); margin-top: 5px; }
+        .dayprog .t { font-size: .95rem; font-weight: 700; }
+        .dayprog .s { font-size: .8rem; color: var(--muted); margin-top: 2px; line-height: 1.35; }
 
-        /* ---------- Cards ---------- */
-        .list { display: flex; flex-direction: column; gap: 14px; }
+        /* ---------- Sections + grouped rows ---------- */
+        .sec-h { display: flex; justify-content: space-between; font-size: .8rem; font-weight: 700; color: var(--muted); letter-spacing: .3px; margin: 20px 4px 8px; text-transform: uppercase; }
+        .group { background: var(--card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+        .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 72px; cursor: pointer; }
+        .row + .row { border-top: 1px solid var(--line); }
+        .row:active { background: var(--card2); }
+        .ic {
+            width: 42px; height: 42px; border-radius: 12px; flex: 0 0 auto; font-size: 1.3rem;
+            display: flex; align-items: center; justify-content: center;
+            background: color-mix(in srgb, var(--accent, var(--acc1)) 16%, transparent);
+        }
+        .mid { flex: 1; min-width: 0; }
+        .mid .nm { font-size: 1rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .mid .sub { font-size: .8rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+        .mid .sub b { color: var(--text); font-weight: 700; }
+        .mid .big-sub { font-size: 1.05rem; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
 
-        .card {
-            background: var(--card);
-            border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 14px;
-            position: relative; overflow: hidden;
+        /* recent-days strip: one cell per day, today outlined */
+        .strip { display: flex; gap: 3px; margin-top: 7px; }
+        .strip i { width: 14px; height: 14px; border-radius: 4px; background: var(--faint); display: block; flex: 0 0 auto; }
+        .strip i.done { background: var(--accent, var(--acc1)); }
+        .strip i.win { background: var(--good); }
+        .strip i.loss { background: var(--danger); }
+        .strip i.rest, .hm .rest, .legend i.rest { background: repeating-linear-gradient(135deg, #3a4356 0 2px, transparent 2px 5px); }
+        .strip i.gap, .hm .gap, .legend i.gap { background: transparent; box-shadow: inset 0 0 0 1px #4a5468; }
+        .strip i.off { background: transparent; }
+        .strip i.today { outline: 2px solid var(--text); outline-offset: 1px; }
+
+        .act { display: flex; gap: 8px; flex: 0 0 auto; align-items: center; }
+        .cb {
+            width: 44px; height: 44px; border-radius: 22px; background: transparent; cursor: pointer;
+            font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; justify-content: center;
         }
-        .card::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-            background: var(--accent, var(--acc1));
+        .cb.ok { border: 2px solid var(--good); color: var(--good); }
+        .cb.no { border: 2px solid color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
+        .cb:active { transform: scale(.94); }
+        .pill {
+            min-height: 44px; padding: 0 16px; border-radius: 22px; font-size: .9rem; font-weight: 700; cursor: pointer;
+            background: color-mix(in srgb, var(--good) 10%, transparent); color: var(--good);
+            border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
         }
-        .card-top { display: flex; align-items: center; gap: 12px; }
-        .icon {
-            width: 46px; height: 46px; border-radius: 13px; flex: 0 0 auto;
-            background: color-mix(in srgb, var(--accent, var(--acc1)) 18%, transparent);
-            display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+        .pill.acc { background: color-mix(in srgb, var(--accent, var(--acc1)) 12%, transparent); color: var(--accent, var(--acc1)); border-color: color-mix(in srgb, var(--accent, var(--acc1)) 50%, transparent); }
+        .tag { font-size: .8rem; font-weight: 700; padding: 6px 10px; border-radius: 999px; background: var(--card2); color: var(--muted); white-space: nowrap; }
+        .tag.win { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+        .tag.loss { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+
+        /* hold-to-check: a ring fills while pressed; completes after 0.6s */
+        .hold {
+            position: relative; width: 48px; height: 48px; border: none; background: none; cursor: pointer; flex: 0 0 auto;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: none;
+        }
+        .hold svg { position: absolute; inset: 0; }
+        .hold .trk { stroke: var(--faint); }
+        .hold .prog { stroke: var(--accent, var(--acc1)); stroke-dasharray: 132; stroke-dashoffset: 132; transition: stroke-dashoffset .12s; }
+        .hold.holding .prog { stroke-dashoffset: 0; transition: stroke-dashoffset .6s linear; }
+        .hold span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; font-weight: 800; color: var(--accent, var(--acc1)); }
+        .done-dot { width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; background: var(--accent, var(--acc1)); color: #0b0e14; font-weight: 900; }
+
+        .cleanbar { height: 5px; background: var(--faint); border-radius: 3px; margin-top: 7px; overflow: hidden; }
+        .cleanbar div { height: 100%; background: var(--accent, var(--acc1)); border-radius: 3px; }
+
+        /* ---------- Active fast card with progress ring ---------- */
+        .fast { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+        .fast-top { display: flex; gap: 14px; align-items: center; cursor: pointer; }
+        .ringwrap { position: relative; width: 140px; height: 140px; flex: 0 0 auto; }
+        .ringwrap svg { display: block; }
+        .ringc { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .ringc .el { font-size: 1.35rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
+        .ringc .lab { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+        .fi .nm { font-size: 1.05rem; font-weight: 700; }
+        .stagechip {
+            display: inline-block; margin-top: 6px; font-size: .8rem; font-weight: 700; padding: 4px 9px; border-radius: 999px;
+            color: var(--accent, var(--acc1)); background: color-mix(in srgb, var(--accent, var(--acc1)) 12%, transparent);
             border: 1px solid color-mix(in srgb, var(--accent, var(--acc1)) 35%, transparent);
         }
-        .card-head { flex: 1; min-width: 0; }
-        .card-head .name { font-weight: 800; font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-head .cat { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-        .info-btn {
-            background: none; border: 1px solid var(--line); color: var(--muted);
-            width: 44px; height: 44px; border-radius: 50%; font-size: 1.05rem; cursor: pointer; flex: 0 0 auto;
-        }
-        .info-btn:active { color: var(--acc2); border-color: var(--acc2); }
+        .fi .kv { font-size: .8rem; color: var(--muted); margin-top: 8px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+        .fi .kv b { color: var(--text); }
 
-        .streak { text-align: center; padding: 14px 0 8px; }
-        .streak .big {
-            font-size: 3.4rem; font-weight: 900; line-height: .9;
-            color: var(--accent, var(--acc2)); font-variant-numeric: tabular-nums;
-        }
-        .streak .unit { font-size: .75rem; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 6px; }
-        .streak .clock {
-            font-size: 1rem; color: var(--text); font-variant-numeric: tabular-nums;
-            margin-top: 8px; opacity: .85; font-weight: 600; letter-spacing: 1px;
-        }
-
-        .progress { margin: 6px 2px 12px; }
-        .progress .ptop { display: flex; justify-content: space-between; font-size: .75rem; color: var(--muted); margin-bottom: 6px; }
-        .progress .ptop b { color: var(--text); font-weight: 700; }
-        .bar { background: #0e0e12; border-radius: 7px; height: 8px; overflow: hidden; border: 1px solid var(--line); }
-        .fill { height: 100%; border-radius: 7px; background: var(--accent, var(--acc1)); transition: width .6s ease; }
-
+        /* ---------- Buttons (detail page + cards) ---------- */
         .ministats { display: flex; gap: 8px; margin-bottom: 14px; }
-        .ministats .m { flex: 1; background: #0f0f13; border: 1px solid var(--line); border-radius: 11px; padding: 9px 4px; text-align: center; }
-        .ministats .m b { display: block; font-size: .95rem; font-weight: 800; }
-        .ministats .m span { display: block; font-size: .75rem; color: var(--muted); margin-top: 3px; }
+        .ministats .m { flex: 1; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 4px; text-align: center; }
+        .ministats .m b { display: block; font-size: 1.3rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .ministats .m > span { display: block; font-size: .75rem; color: var(--muted); margin-top: 3px; }
 
-        .actions { display: flex; gap: 10px; }
+        .actions { display: flex; gap: 10px; flex-wrap: wrap; }
         .btn {
-            flex: 1; padding: 13px; border-radius: 12px; border: none; font-weight: 800;
-            font-size: .9rem; cursor: pointer; letter-spacing: .3px; transition: transform .08s, filter .2s;
+            flex: 1; min-height: 48px; padding: 12px; border-radius: 12px; border: none; font-weight: 800;
+            font-size: .9rem; cursor: pointer; letter-spacing: .2px; transition: transform .08s, filter .2s;
         }
         .btn:active { transform: scale(.97); }
         .btn-danger { background: color-mix(in srgb, var(--danger) 16%, transparent); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent); }
         .btn-good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 42%, transparent); }
         .btn-done { background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent); }
-        .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); flex: 0 0 auto; width: 48px; }
+        .btn-plain { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+        .btn-quiet { background: transparent; color: var(--muted); border: 1px solid var(--line); }
         .btn.on { outline: 2px solid currentColor; outline-offset: 2px; }
 
+        /* ---------- Detail page (pushed full screen) ---------- */
+        .page {
+            position: fixed; inset: 0; z-index: 90; background: var(--bg0); overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) calc(env(safe-area-inset-bottom) + 40px) env(safe-area-inset-left);
+            animation: push .22s ease;
+        }
+        .page[hidden] { display: none; }
+        @keyframes push { from { transform: translateX(28%); opacity: .4; } to { transform: none; opacity: 1; } }
+        .page-in { max-width: 540px; margin: 0 auto; padding: 8px 16px 0; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; min-height: 52px; }
+        .navbtn { background: none; border: none; color: var(--acc1); font-size: 1.05rem; font-weight: 600; min-height: 44px; min-width: 44px; padding: 0 4px; cursor: pointer; }
+        .p-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 16px; }
+        .p-head .ic { width: 52px; height: 52px; font-size: 1.7rem; border-radius: 15px; }
+        .p-head h2 { font-size: 1.6rem; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; }
+        .p-head .meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+        .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+        .panel + .panel { margin-top: 12px; }
+        .p-status { font-size: .9rem; color: var(--muted); margin: 0 2px 10px; }
+        .p-status b { color: var(--text); }
+        .plan { font-size: .92rem; line-height: 1.5; }
+        .plan .lbl { font-size: .75rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 4px; }
+
+        /* heatmap: 7 rows (Mon–Sun), one column per week, today bottom-right */
+        .hm { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 14px); grid-auto-columns: 14px; gap: 3px; }
+        .hm > * { width: 14px; height: 14px; border-radius: 3px; background: var(--faint); border: none; padding: 0; display: block; }
+        .hm button { cursor: pointer; }
+        .hm .done { background: var(--accent, var(--acc1)); }
+        .hm .clean { background: color-mix(in srgb, var(--accent, var(--acc1)) 70%, transparent); }
+        .hm .win { background: var(--good); }
+        .hm .loss { background: var(--danger); }
+        .hm .off { background: transparent; }
+        .hm .fut { background: transparent; }
+        .hm .today { outline: 2px solid var(--text); outline-offset: 1px; }
+        .hm-months { display: grid; grid-auto-flow: column; grid-auto-columns: 14px; gap: 3px; font-size: .75rem; color: var(--muted); margin-top: 6px; height: 14px; overflow: visible; white-space: nowrap; }
+        .hm-wrap { display: flex; gap: 6px; }
+        .hm-days { display: grid; grid-template-rows: repeat(7, 14px); gap: 3px; font-size: .75rem; color: var(--muted); line-height: 14px; }
+        .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .8rem; color: var(--muted); margin-top: 12px; align-items: center; }
+        .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+        /* weekday bars */
+        .wkbars { display: flex; gap: 8px; align-items: flex-end; height: 104px; }
+        .wkbars > div { flex: 1; text-align: center; font-size: .75rem; color: var(--muted); display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+        .wkbars .b { background: var(--accent, var(--acc1)); border-radius: 6px 6px 3px 3px; margin: 3px auto 5px; width: 70%; max-width: 30px; min-height: 3px; }
+        .wkbars .b.lo { background: var(--warn); }
+        .wkbars .pc { color: var(--text); font-weight: 700; }
+        .insight { font-size: .85rem; color: var(--muted); margin-top: 10px; line-height: 1.4; }
+        .note-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .88rem; padding: 10px 0; }
+        .note-row + .note-row { border-top: 1px solid var(--line); }
+        .note-row .d { color: var(--muted); flex: 0 0 auto; }
+        .note-row .t { text-align: right; flex: 1; min-width: 0; }
+        .x-btn { width: 44px; height: 44px; border-radius: 22px; border: 1px solid var(--line); background: none; color: var(--muted); cursor: pointer; flex: 0 0 auto; margin: -8px 0; }
+        details.more { margin-top: 12px; }
+        details.more summary { list-style: none; cursor: pointer; min-height: 48px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: .95rem; padding: 0 14px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+        details.more summary::-webkit-details-marker { display: none; }
+        details.more summary::after { content: '›'; color: var(--muted); font-size: 1.3rem; transition: transform .2s; }
+        details.more[open] summary::after { transform: rotate(90deg); }
+        details.more > .inner { padding: 6px 4px 0; }
+
+        /* color swatches in the form */
+        .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+        .sw { width: 44px; height: 44px; border-radius: 22px; border: 3px solid transparent; cursor: pointer; }
+        .sw.sel { border-color: var(--text); }
+        .seg { display: inline-flex; background: var(--card2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 3px; }
+        .seg button { min-height: 38px; padding: 0 14px; border: none; border-radius: 9px; background: none; color: var(--muted); font-weight: 700; font-size: .85rem; cursor: pointer; }
+        .seg button.sel { background: var(--bg1); color: var(--text); }
+
         /* ---------- Empty state ---------- */
-        .empty { text-align: center; padding: 34px 10px 26px; }
+        .empty { text-align: center; padding: 40px 10px 26px; }
         .empty h2 { margin: 12px 0 6px; font-size: 1.2rem; }
         .empty p { color: var(--muted); font-size: .9rem; margin-bottom: 18px; }
         .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
@@ -289,14 +386,16 @@
 </head>
 <body>
     <div class="wrap">
-        <div class="header">
-            <h1>Protocol</h1>
-            <button class="hdr-btn gear" data-action="settings" aria-label="Settings">⚙</button>
-            <button class="hdr-btn add-btn" data-action="add" aria-label="New tracker">＋</button>
+        <div class="top">
+            <div><div class="date" id="hdrDate"></div><h1>Today</h1></div>
+            <div class="btns">
+                <button class="hdr-btn gear" data-action="settings" aria-label="Settings">⚙</button>
+                <button class="hdr-btn add-btn" data-action="add" aria-label="New tracker">＋</button>
+            </div>
         </div>
-        <div class="summary" id="summary"></div>
-        <div id="list" class="list"></div>
+        <div id="list"></div>
     </div>
+    <div id="page" class="page" hidden></div>
 
     <div class="overlay" id="overlay"></div>
     <div class="toast" id="toast"></div>
@@ -382,25 +481,25 @@
        Times are typical, not exact; they shift with your last meal, activity
        and metabolism. Wording stays hedged where the evidence is early. ---------- */
     const FAST_STAGES = [
-        [0,  'Fed state',          'Insulin is elevated while the last meal digests — the body is storing, not burning.'],
-        [4,  'Post-absorptive',    'Insulin falls and the body switches to stored liver glycogen for fuel.'],
-        [8,  'Glycogen rundown',   'Liver glycogen runs low; fat starts mobilizing as the backup fuel.'],
-        [12, 'Fat-burning mode',   'Lipolysis ramps up — fat becomes the main fuel and the first ketones appear.'],
-        [16, 'Ketosis',            'Ketone production is meaningful; many report steady energy and mental clarity. The classic 16:8 target.'],
-        [18, 'Autophagy ramps up', 'Cellular cleanup — damaged proteins and worn-out parts get broken down and recycled (strongest evidence is from animal studies).'],
-        [24, 'Deep ketosis',       'Growth hormone rises sharply to protect muscle; hunger typically comes in waves, then fades.'],
-        [36, 'Peak autophagy zone','Cell-repair signaling is near its peak and insulin sensitivity is resetting.'],
-        [48, 'Immune reset begins','Old immune cells get broken down and stem-cell activity ramps up (early-stage human research).'],
-        [72, 'Full reset',         'The practical ceiling for most protocols — deep metabolic reset. Going past this calls for medical supervision.']
+        [0,  'Fed state',        'Insulin is elevated while the last meal digests — the body is storing, not burning.'],
+        [4,  'Post-absorptive',  'Insulin falls and the body starts drawing on stored liver glycogen.'],
+        [8,  'Glycogen rundown', 'Liver glycogen runs lower; fat mobilization picks up as the backup fuel.'],
+        [12, 'Fat-burning',      'Fat becomes a main fuel and ketones begin rising — typically from about 12h, earlier if you trained, later after a big carb meal.'],
+        [16, 'Ketones rising',   'Ketone levels keep climbing for most people — the classic 16:8 target. Timing varies a lot from person to person.'],
+        [18, 'Deeper fat use',   'Fat use keeps deepening. Autophagy (cellular cleanup) rises with fasting in animal studies; when it starts in humans is not known.'],
+        [24, 'Full-day fast',    'Growth hormone rises during longer fasts, which helps spare muscle; hunger tends to come in waves, then ease.'],
+        [36, 'Extended fast',    'Ketones are high and insulin is low. Most claimed benefits beyond here come from animal or small human studies.'],
+        [48, 'Two-day fast',     'Early research — mostly in animals — links prolonged fasts to immune-cell turnover. Electrolytes stop being optional.'],
+        [72, 'Three-day fast',   'The practical ceiling for most people. Going past this calls for medical supervision.']
     ];
     /* Goal-duration guide — why each fasting length exists. */
     const FAST_GOALS = [
-        { h: 16, name: '16:8 · The daily driver',   desc: 'Eat within an 8-hour window. Daily fat-burning plus light ketosis — the easiest protocol to sustain and the usual place to start.' },
-        { h: 18, name: '18:6 · Extended daily',      desc: 'A deeper daily push into ketosis with stronger appetite control, still compatible with normal life.' },
-        { h: 24, name: '24h · Full-day reset',       desc: 'Dinner to dinner. A growth-hormone spike, full digestive rest and a solid ketosis block — a popular once-a-week rhythm.' },
-        { h: 36, name: '36h · Monk fast',            desc: 'Skip a whole day and sleep through the far side. Lands in the peak-autophagy zone — commonly run monthly.' },
-        { h: 48, name: '48h · Deep clean',           desc: 'A serious insulin-sensitivity and cell-cleanup reset. Electrolytes stop being optional here — plan it on quiet days.' },
-        { h: 72, name: '72h · Full reset',           desc: 'The immune-cell recycling territory reported in early fasting research. Prep properly and get medical clearance if you take any medication or have any condition.' }
+        { h: 16, name: '16:8 · The daily driver',   desc: 'Eat within an 8-hour window. A daily fat-burning block with ketones starting to rise — the easiest protocol to sustain and the usual place to start.' },
+        { h: 18, name: '18:6 · Extended daily',      desc: 'A longer daily run of low insulin and rising ketones, with stronger appetite control, still compatible with normal life.' },
+        { h: 24, name: '24h · Full-day reset',       desc: 'Dinner to dinner. A growth-hormone rise and a solid ketone block — a popular once-a-week rhythm.' },
+        { h: 36, name: '36h · Monk fast',            desc: 'Skip a whole day and sleep through the far side. Deep into ketosis; autophagy claims here rest on animal data — human timing is unknown.' },
+        { h: 48, name: '48h · Deep clean',           desc: 'A serious ketone and insulin-sensitivity push. Electrolytes stop being optional here — plan it on quiet days.' },
+        { h: 72, name: '72h · Full reset',           desc: 'Where early research, mostly in animals, reports immune-cell turnover. Prep properly and get medical clearance if you take any medication or have any condition.' }
     ];
     function stageIdxAt(hours) {
         let idx = 0;
@@ -410,7 +509,7 @@
 
     /* ---------- Presets + knowledge base ---------- */
     const PRESETS = [
-        { key:'weed', name:'No Weed', icon:'🌿', color:'#4caf50', type:'quit', cat:'Substance',
+        { key:'weed', name:'No Weed', icon:'🌿', color:'#3fb950', type:'quit', cat:'Substance',
           why:'Sharper memory, real motivation, deeper sleep, fatter wallet, healthier lungs.',
           timeline:[
             ['1–2 Days','Cravings, irritability and appetite shifts kick in.'],
@@ -420,7 +519,7 @@
             ['3 Months+','Lungs and baseline mood settle into the clear-headed you.']],
           tips:['Toss the gear and dodge the people/places tied to using.','Slam cardio when a craving spikes — it burns the urge fast.','Keep hands busy and hydrate hard the first week.'] },
 
-        { key:'alcohol', name:'No Alcohol', icon:'🍺', color:'#f0a020', type:'quit', cat:'Substance',
+        { key:'alcohol', name:'No Alcohol', icon:'🍺', color:'#e3b341', type:'quit', cat:'Substance',
           why:'Better sleep, clearer skin, weight loss, sharper mind, money saved.',
           timeline:[
             ['12–24 Hours','Cravings begin; heavy drinkers may feel shaky.'],
@@ -430,7 +529,7 @@
             ['3 Months+','Blood pressure, liver and immune function bounce back.']],
           tips:['Have a go-to non-alcoholic drink ready for every situation.','Plan around social triggers before they hit.','Heavy daily drinker? Detox under medical supervision — it can be dangerous.'] },
 
-        { key:'nicotine', name:'No Nicotine', icon:'🚬', color:'#78909c', type:'quit', cat:'Substance',
+        { key:'nicotine', name:'No Nicotine', icon:'🚬', color:'#8b949e', type:'quit', cat:'Substance',
           why:'Lungs, circulation, taste, smell, money and years of life back.',
           timeline:[
             ['20 Min','Heart rate and blood pressure start dropping.'],
@@ -440,7 +539,7 @@
             ['1 Year','Heart-disease risk is cut roughly in half.']],
           tips:['Ride the wave — most cravings pass in 3–5 minutes.','Swap the hand-to-mouth habit (gum, water, toothpick).','Avoid the first one — there is no "just one".'] },
 
-        { key:'gaming', name:'No Call of Duty', icon:'🎮', color:'#7c4dff', type:'quit', cat:'Gaming',
+        { key:'gaming', name:'No Call of Duty', icon:'🎮', color:'#a371f7', type:'quit', cat:'Gaming',
           why:'Reclaim hours, chase real goals, fix sleep, rebuild relationships.',
           timeline:[
             ['1–3 Days','Boredom and urges hit hardest; expect restlessness.'],
@@ -450,7 +549,7 @@
             ['3 Months+','Gaming loses its grip; you run your time, not the game.']],
           tips:['Uninstall it / hand off the console. Friction is your friend.','Pre-plan what the freed-up hours go toward.','Replace the social side with real plans or a co-op hobby.'] },
 
-        { key:'screen', name:'Screen Detox', icon:'📱', color:'#29b6f6', type:'quit', cat:'Digital',
+        { key:'screen', name:'Screen Detox', icon:'📱', color:'#58a6ff', type:'quit', cat:'Digital',
           why:'Attention span, real focus, presence, better sleep — unplug and breathe.',
           timeline:[
             ['Day 1','Phantom reaches for the phone all day. Notice them.'],
@@ -460,7 +559,7 @@
             ['1 Month+','You use the phone as a tool, not a reflex.']],
           tips:['Grayscale the screen and kill non-essential notifications.','No phone in the bedroom — buy a real alarm clock.','Set hard app limits; keep the phone in another room while you work.'] },
 
-        { key:'porn', name:'No Porn', icon:'🚫', color:'#ef5350', type:'quit', cat:'Habit',
+        { key:'porn', name:'No Porn', icon:'🚫', color:'#f778ba', type:'quit', cat:'Habit',
           why:'More energy, motivation, confidence and real-world drive.',
           timeline:[
             ['1–5 Days','Urges spike; this is the hardest stretch — stay busy.'],
@@ -470,7 +569,7 @@
             ['3 Months+','New baseline — drive redirected outward.']],
           tips:['Install a content blocker before willpower is tested.','Never get bored and alone with a device — break that combo.','When the urge hits, change rooms and move your body.'] },
 
-        { key:'sugar', name:'No Sugar', icon:'🍩', color:'#ff7043', type:'quit', cat:'Diet',
+        { key:'sugar', name:'No Sugar', icon:'🍩', color:'#ff9f43', type:'quit', cat:'Diet',
           why:'Stable energy, less inflammation, clearer skin, easier fat loss.',
           timeline:[
             ['1–3 Days','Cravings and energy dips as the body adjusts.'],
@@ -479,7 +578,7 @@
             ['1 Month+','Skin, weight and inflammation markers improve.']],
           tips:['Clear the house of the easy stuff.','Eat enough protein and fat so you are never starving.','Keep fruit or nuts on hand for the craving hour.'] },
 
-        { key:'caffeine', name:'No Caffeine', icon:'☕', color:'#8d6e63', type:'quit', cat:'Substance',
+        { key:'caffeine', name:'No Caffeine', icon:'☕', color:'#e3b341', type:'quit', cat:'Substance',
           why:'Calmer baseline, deeper sleep, no afternoon crashes, less anxiety.',
           timeline:[
             ['12–24 Hours','Headache and fatigue as adenosine rebounds.'],
@@ -488,7 +587,7 @@
             ['2 Weeks+','Deeper sleep, calmer nervous system.']],
           tips:['Taper instead of going cold turkey to dodge the headache.','Hydrate — a lot of "tired" is just dehydration.','Swap the ritual: herbal tea or a short walk.'] },
 
-        { key:'junkfood', name:'No Junk Food', icon:'🍔', color:'#ffa726', type:'quit', cat:'Diet',
+        { key:'junkfood', name:'No Junk Food', icon:'🍔', color:'#ff9f43', type:'quit', cat:'Diet',
           why:'Fat loss, steady energy, better digestion, sharper mind.',
           timeline:[
             ['1–3 Days','Cravings for salt/sugar/fat are loudest now.'],
@@ -497,7 +596,7 @@
             ['1 Month+','Cooking real food becomes the default.']],
           tips:['Meal-prep so the easy choice is the good choice.','Do not shop hungry.','Allow one planned treat so you never feel deprived.'] },
 
-        { key:'beard', name:'Beard Growth', icon:'🧔', color:'#c0894e', type:'quit', cat:'Grooming',
+        { key:'beard', name:'Beard Growth', icon:'🧔', color:'#e3b341', type:'quit', cat:'Grooming',
           why:'Track every day you let it grow. No shaving, no trimming — just send it.',
           timeline:[
             ['1 Week','Stubble fills in; the itchy phase begins.'],
@@ -507,7 +606,7 @@
             ['6 Months+','Yeard territory — proper length and density.']],
           tips:['Push through the itch — it ends around week 2–3.','Wash and condition it; brush daily to train direction.','Resist trimming early; patches usually fill with time.'] },
 
-        { key:'gym', name:'Gym / Workout', icon:'💪', color:'#ff5252', type:'build', cat:'Fitness',
+        { key:'gym', name:'Gym / Workout', icon:'💪', color:'#ff9f43', type:'build', cat:'Fitness',
           why:'Strength, energy, mood, discipline. Check in every day you train.',
           timeline:[
             ['1 Week','Showing up is the win — habit forming.'],
@@ -516,7 +615,7 @@
             ['3 Months+','It is part of who you are now.']],
           tips:['Lower the bar: never miss two days in a row.','Lay out gear the night before.','Track sessions — consistency beats intensity.'] },
 
-        { key:'reading', name:'Read Daily', icon:'📚', color:'#26a69a', type:'build', cat:'Mind',
+        { key:'reading', name:'Read Daily', icon:'📚', color:'#2dd4bf', type:'build', cat:'Mind',
           why:'Focus, knowledge, calm. A few pages a day compounds hard.',
           timeline:[
             ['1 Week','10 pages a day feels automatic.'],
@@ -524,7 +623,7 @@
             ['3 Months','Multiple books deep; default to a book over a screen.']],
           tips:['Keep the book where the phone usually is.','Even one page counts — protect the streak.','Read before bed instead of scrolling.'] },
 
-        { key:'meditate', name:'Meditate', icon:'🧘', color:'#ab47bc', type:'build', cat:'Mind',
+        { key:'meditate', name:'Meditate', icon:'🧘', color:'#a371f7', type:'build', cat:'Mind',
           why:'Calm, focus, emotional control. Sit daily, even for a minute.',
           timeline:[
             ['1 Week','Sitting still gets easier; you notice the noise.'],
@@ -532,7 +631,7 @@
             ['1–3 Months','Calmer baseline, sharper attention.']],
           tips:['Same time, same spot every day.','Start with 2 minutes — tiny and unbreakable.','Missed a day? Restart without the guilt spiral.'] },
 
-        { key:'cold', name:'Cold Shower', icon:'🚿', color:'#42a5f5', type:'build', cat:'Discipline',
+        { key:'cold', name:'Cold Shower', icon:'🚿', color:'#58a6ff', type:'build', cat:'Discipline',
           why:'Discipline on demand, alertness, resilience, mood boost.',
           timeline:[
             ['1 Week','The dread is the point — you face it daily.'],
@@ -567,6 +666,9 @@
           why:'Your rules, your streak. Define what winning looks like.',
           timeline:[], tips:['Make the goal specific and binary — clear win or reset.','Stack it onto an existing daily anchor.','Track the streak where you will see it every day.'] }
     ];
+    /* Curated accent palette, tuned for the dark background. Pure red is left out
+       on purpose — red only ever means "broke / reset / end". */
+    const PALETTE = ['#58a6ff', '#3fb950', '#a371f7', '#ff9f43', '#2dd4bf', '#f778ba', '#e3b341', '#8b949e'];
     const presetByKey = k => PRESETS.find(p => p.key === k) || PRESETS[PRESETS.length-1];
 
     /* ---------- State + storage ----------
@@ -644,54 +746,139 @@
     }
     function bestMs(h) { return Math.max(0, ...segments(h)); }
 
-    // consecutive-day streak for a build-type habit
+    /* ---------- Calendar helpers ---------- */
+    function dayStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+    function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+    function keyToDate(k) { return new Date(k + 'T00:00:00'); }
+    // Monday-start week id, used for the weekly skip allowance
+    function weekKey(d) { const x = dayStart(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return localKey(x); }
+    const createdKey = h => localKey(new Date(h.createdDate || h.startDate || Date.now()));
+
+    /* ---------- BUILD: daily check-ins with a weekly skip allowance ----------
+       h.checkIns = ['YYYY-MM-DD'...]; h.skips = ['YYYY-MM-DD'...].
+       A skip bridges a day without breaking the streak (and doesn't add to it).
+       One skip per Monday-start week — scarce on purpose: a reserve you spend,
+       not a loophole. Today not yet done never breaks the streak. */
+    const SKIPS_PER_WEEK = 1;
+    function skipsUsed(h, d) {
+        const wk = weekKey(d);
+        return (h.skips || []).filter(k => weekKey(keyToDate(k)) === wk).length;
+    }
+    const skipsLeft = (h, d = new Date()) => Math.max(0, SKIPS_PER_WEEK - skipsUsed(h, d));
+    function buildDay(h, k) {   // 'done' | 'skip' | 'miss' | 'off' (before tracking) | 'fut'
+        if (k > todayKey()) return 'fut';
+        if ((h.checkIns || []).includes(k)) return 'done';
+        if ((h.skips || []).includes(k)) return 'skip';
+        if (k < createdKey(h)) return 'off';
+        return 'miss';
+    }
     function buildStreak(h) {
-        const set = new Set(h.checkIns || []);
-        let d = new Date(); d.setHours(0,0,0,0);
-        if (!set.has(localKey(d))) { d.setDate(d.getDate()-1); if (!set.has(localKey(d))) return 0; }
+        const done = new Set(h.checkIns || []), skip = new Set(h.skips || []);
+        let d = dayStart(new Date());
+        if (!done.has(localKey(d)) && !skip.has(localKey(d))) d = addDays(d, -1);   // today still open
         let n = 0;
-        while (set.has(localKey(d))) { n++; d.setDate(d.getDate()-1); }
+        for (let i = 0; i < 5000; i++) {
+            const k = localKey(d);
+            if (done.has(k)) n++;
+            else if (!skip.has(k)) break;
+            d = addDays(d, -1);   // calendar step — DST-safe
+        }
         return n;
     }
-    // Walk calendar days with setDate() rather than adding 24h — a DST day is
-    // 23h or 25h long, and a ms-difference check split streaks at the clock change.
     function bestBuildStreak(h) {
-        const set = new Set(h.checkIns || []);
-        let best = 0;
-        for (const k of set) {
-            const prev = new Date(k + 'T00:00:00'); prev.setDate(prev.getDate() - 1);
-            if (set.has(localKey(prev))) continue;          // not the first day of a run
-            const d = new Date(k + 'T00:00:00');
-            let run = 0;
-            while (set.has(localKey(d))) { run++; d.setDate(d.getDate() + 1); }
-            best = Math.max(best, run);
+        const done = new Set(h.checkIns || []), skip = new Set(h.skips || []);
+        const keys = [...done, ...skip].sort();
+        if (!keys.length) return 0;
+        let best = 0, run = 0;
+        const end = todayKey();
+        for (let d = keyToDate(keys[0]), i = 0; i < 5000; d = addDays(d, 1), i++) {
+            const k = localKey(d);
+            if (k > end) break;
+            if (done.has(k)) { run++; best = Math.max(best, run); }
+            else if (!skip.has(k) && k !== end) run = 0;
         }
         return best;
     }
 
-    /* Discipline-type ('disc') helpers — h.outcomes is a { 'YYYY-MM-DD': 'win'|'loss' } log.
-       Streak = consecutive logged wins counting back from the latest entry; a loss resets it.
-       Unlogged days (weekends, no-trade days) never break the streak. */
+    /* ---------- RULES ('disc'): h.outcomes = { 'YYYY-MM-DD': 'win'|'loss'|'rest' } ----------
+       'rest' = no session that day (market holiday, chose not to trade) — neutral.
+       A scheduled day left unlogged is a GAP once it's two days old (yesterday can
+       still be backfilled). Gaps break the streak — the day you skip logging is
+       the day most likely to have gone wrong. Days before h.gapsFrom (set when
+       this rule shipped) keep the old "unlogged doesn't count" behaviour, so
+       existing history isn't retroactively broken. */
+    function isScheduled(h, d) {
+        if (!h.reminderWeekdays) return true;
+        const wd = d.getDay();
+        return wd !== 0 && wd !== 6;
+    }
+    function isRestDay(h) { return !isScheduled(h, new Date()); }
+    function discDay(h, k) {   // 'win'|'loss'|'rest'|'gap'|'open'|'off'|'fut'
+        if (k > todayKey()) return 'fut';
+        const o = (h.outcomes || {})[k];
+        if (o) return o;
+        if (k < createdKey(h)) return 'off';
+        const d = keyToDate(k);
+        if (!isScheduled(h, d)) return 'off';
+        if (k >= localKey(addDays(new Date(), -1))) return 'open';   // today or yesterday: still loggable
+        if (h.gapsFrom && k < h.gapsFrom) return 'off';                 // legacy days: unlogged was allowed
+        if (!h.gapsFrom) return 'off';
+        return 'gap';
+    }
     function discStreak(h) {
-        const keys = Object.keys(h.outcomes || {}).sort();
+        const start = [createdKey(h), ...Object.keys(h.outcomes || {})].sort()[0];
         let n = 0;
-        for (let i = keys.length - 1; i >= 0; i--) {
-            if (h.outcomes[keys[i]] === 'win') n++; else break;
+        for (let d = dayStart(new Date()), i = 0; i < 5000; d = addDays(d, -1), i++) {
+            const k = localKey(d);
+            if (k < start) break;
+            const s = discDay(h, k);
+            if (s === 'win') n++;
+            else if (s === 'loss' || s === 'gap') break;
         }
         return n;
     }
     function bestDiscStreak(h) {
-        const keys = Object.keys(h.outcomes || {}).sort();
+        const start = [createdKey(h), ...Object.keys(h.outcomes || {})].sort()[0];
         let best = 0, run = 0;
-        for (const k of keys) {
-            if (h.outcomes[k] === 'win') { run++; best = Math.max(best, run); } else run = 0;
+        const end = todayKey();
+        for (let d = keyToDate(start), i = 0; i < 5000; d = addDays(d, 1), i++) {
+            const k = localKey(d);
+            if (k > end) break;
+            const s = discDay(h, k);
+            if (s === 'win') { run++; best = Math.max(best, run); }
+            else if (s === 'loss' || s === 'gap') run = 0;
         }
         return best;
     }
-    function discCounts(h) {
-        const v = Object.values(h.outcomes || {});
-        const wins = v.filter(x => x === 'win').length;
-        return { wins, losses: v.length - wins, total: v.length };
+    function discCounts(h, sinceKey) {
+        let wins = 0, losses = 0, rests = 0;
+        for (const [k, v] of Object.entries(h.outcomes || {})) {
+            if (sinceKey && k < sinceKey) continue;
+            if (v === 'win') wins++; else if (v === 'loss') losses++; else if (v === 'rest') rests++;
+        }
+        return { wins, losses, rests, total: wins + losses };
+    }
+    // Adherence over the last N days: on-plan sessions ÷ sessions (gaps count as misses).
+    function adherence(h, days = 30) {
+        let win = 0, bad = 0;
+        for (let i = 0; i < days; i++) {
+            const s = discDay(h, localKey(addDays(new Date(), -i)));
+            if (s === 'win') win++; else if (s === 'loss' || s === 'gap') bad++;
+        }
+        return win + bad ? Math.round(win / (win + bad) * 100) : null;
+    }
+
+    /* ---------- QUIT: clean-day share alongside the live clock ---------- */
+    function relapseKeys(h) { return new Set((h.relapses || []).map(r => localKey(new Date(r.date)))); }
+    function cleanStats(h, days = 30) {
+        const rk = relapseKeys(h), from = createdKey(h);
+        let clean = 0, total = 0;
+        for (let i = 0; i < days; i++) {
+            const k = localKey(addDays(new Date(), -i));
+            if (k < from) break;
+            total++; if (!rk.has(k)) clean++;
+        }
+        return { clean, total };
     }
 
     /* Fasting ('fast') helpers — h.fastStart is the active fast's ISO start (null when
@@ -732,48 +919,83 @@
     const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
     /* ============================================================
-       RENDER
+       RENDER — "Today" home: what needs doing now, then everything else.
+       Sections: Active now (running fasts) · Due today (unlogged check-ins and
+       rules) · Done today · Tracking (quit clocks, idle fasts, rest days).
+       Each tracker is a compact row; tap it for the full detail page.
        ============================================================ */
     function render() {
-        renderSummary();
-        renderList();
+        renderHome();
+        if (pageId) renderPage();
     }
 
-    function renderSummary() {
-        const el = document.getElementById('summary');
-        if (!state.habits.length) { el.style.display = 'none'; return; }
-        el.style.display = 'grid';
-        // Best Run = the longest streak ever (not just the current one) across
-        // day-based trackers. Left Today = daily check-ins / rule logs still open.
-        let best = 0, due = 0, dueTypes = 0;
+    function fmtTime(d) { return new Date(d).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    function fmtDayTime(d) {
+        const x = new Date(d), today = dayStart(new Date()), dd = dayStart(x);
+        const diff = Math.round((dd - today) / DAY);
+        const day = diff === 0 ? 'Today' : diff === -1 ? 'Yesterday' : diff === 1 ? 'Tomorrow' : x.toLocaleDateString([], { weekday: 'short' });
+        return day + ' ' + fmtTime(x);
+    }
+    function fmtDur(ms) {   // 3h 36m / 45m / 2d 4h
+        const m = Math.max(0, Math.round(ms / MIN));
+        if (m >= 48 * 60) return Math.floor(m / 1440) + 'd ' + Math.floor((m % 1440) / 60) + 'h';
+        if (m >= 60) return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm';
+        return m + 'm';
+    }
+    function fmtQuitClock(ms) {
+        const d = Math.floor(ms / DAY);
+        return (d ? d + 'd ' : '') + fmtClock(ms);
+    }
+
+    function classify() {
+        const g = { active: [], due: [], done: [], tracking: [] };
+        const tk = todayKey();
         for (const h of state.habits) {
-            if (h.type === 'build') {
-                best = Math.max(best, bestBuildStreak(h), buildStreak(h));
-                dueTypes++; if (!(h.checkIns || []).includes(todayKey())) due++;
+            if (h.type === 'fast') (h.fastStart ? g.active : g.tracking).push(h);
+            else if (h.type === 'build') {
+                const s = buildDay(h, tk);
+                (s === 'done' || s === 'skip' ? g.done : g.due).push(h);
             } else if (h.type === 'disc') {
-                best = Math.max(best, bestDiscStreak(h), discStreak(h));
-                if (isRestDay(h)) continue;
-                dueTypes++; if (!(h.outcomes || {})[todayKey()]) due++;
-            } else if (h.type === 'quit') {
-                best = Math.max(best, Math.floor(Math.max(bestMs(h), quitMs(h)) / DAY));
-            }
+                if ((h.outcomes || {})[tk]) g.done.push(h);
+                else if (isRestDay(h)) g.tracking.push(h);
+                else g.due.push(h);
+            } else g.tracking.push(h);
         }
-        el.innerHTML =
-            stat(state.habits.length, 'Trackers') +
-            stat(best, 'Best run · days') +
-            stat(dueTypes ? (due ? due : '✓') : '—', 'Left today');
+        return g;
     }
-    // A weekdays-only tracker has nothing due on Saturday/Sunday.
-    function isRestDay(h) {
-        const wd = new Date().getDay();
-        return !!h.reminderWeekdays && (wd === 0 || wd === 6);
-    }
-    const stat = (b, s) => `<div class="stat"><b>${b}</b><span>${esc(s)}</span></div>`;
 
-    function renderList() {
+    function renderHome() {
+        const now = new Date();
+        document.getElementById('hdrDate').textContent =
+            now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
         const el = document.getElementById('list');
         if (!state.habits.length) { el.innerHTML = emptyState(); return; }
-        el.innerHTML = state.habits.map(card).join('');
+        const g = classify();
+        let html = dayProgress(g);
+        if (g.active.length) html += sec('Active now') + g.active.map(fastCard).join('<div style="height:10px"></div>');
+        if (g.due.length) html += sec('Due today', g.due.length) + group(g.due);
+        if (g.done.length) html += sec('Done today', g.done.length) + group(g.done);
+        if (g.tracking.length) html += sec('Tracking') + group(g.tracking);
+        el.innerHTML = html;
+    }
+    const sec = (t, n) => `<div class="sec-h"><span>${esc(t)}</span>${n != null ? `<span>${n}</span>` : ''}</div>`;
+    const group = list => `<div class="group">${list.map(row).join('')}</div>`;
+
+    function dayProgress(g) {
+        const total = g.due.length + g.done.length;
+        const bits = [];
+        for (const h of g.active) bits.push(`${esc(h.name)} goal ${fmtDayTime(new Date(h.fastStart).getTime() + (h.goalHours || 16) * HOUR)}`);
+        if (!total && !bits.length) return '';
+        const pct = total ? g.done.length / total : 1;
+        const C = 2 * Math.PI * 15;
+        const ring = `<svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" fill="none" stroke="var(--faint)" stroke-width="5"/>
+            <circle cx="18" cy="18" r="15" fill="none" stroke="var(--good)" stroke-width="5" stroke-linecap="round"
+            stroke-dasharray="${(C * pct).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 18 18)"/></svg>`;
+        const title = !total ? 'Nothing due today'
+            : g.due.length === 0 ? `All ${total} done today`
+            : `${g.done.length} of ${total} done today`;
+        if (g.due.length) bits.unshift('Left: ' + g.due.map(h => esc(h.name)).join(', '));
+        return `<div class="dayprog">${ring}<div><div class="t">${title}</div><div class="s">${bits.join(' · ')}</div></div></div>`;
     }
 
     function emptyState() {
@@ -788,219 +1010,160 @@
         </div>`;
     }
 
-    function card(h) {
+    function row(h) {
         const accent = h.color || '#58a6ff';
-        if (h.type === 'build') return buildCard(h, accent);
-        if (h.type === 'disc') return discCard(h, accent);
-        if (h.type === 'fast') return fastCard(h, accent);
-        return quitCard(h, accent);
+        let body = '', act = '';
+        if (h.type === 'build') [body, act] = buildRow(h);
+        else if (h.type === 'disc') [body, act] = discRow(h);
+        else if (h.type === 'fast') [body, act] = fastIdleRow(h);
+        else [body, act] = quitRow(h);
+        return `<div class="row" style="--accent:${accent}" data-action="open" data-id="${h.id}">
+            <div class="ic">${h.icon || '⭐'}</div>
+            <div class="mid"><div class="nm">${esc(h.name)}</div>${body}</div>
+            <div class="act">${act}</div>
+        </div>`;
     }
 
-    function fastCard(h, accent) {
-        const goal = h.goalHours || 16;
-        const { count, longest, hitRate } = fastStats(h);
-
-        if (h.fastStart) {   // ── active fast ──
-            const ms = fastMs(h), hours = ms / HOUR;
-            const st = FAST_STAGES[stageIdxAt(hours)];
-            const nx = FAST_STAGES.find(s => s[0] > hours);
-            const pct = Math.min(100, hours / goal * 100);
-            const done = hours >= goal;
-            const ptxt = done ? `Goal reached — ${goal}h fast complete`
-                              : nx ? `Next: ${nx[1]} at ${nx[0]}h` : `Past every mapped stage`;
-            return `<div class="card" style="--accent:${accent}">
-                ${cardTop(h)}
-                <div class="streak">
-                    <div class="big" data-id="${h.id}" data-kind="big">${Math.floor(hours)}</div>
-                    <div class="unit">HOURS FASTED · GOAL ${goal}H</div>
-                    <div class="clock" data-id="${h.id}" data-kind="clock">${fmtFastClock(ms)}</div>
-                    <div class="stageline" data-id="${h.id}" data-kind="stage"><b>${esc(st[1])}</b> — ${esc(st[2])}</div>
-                </div>
-                ${progress(pct, ptxt, Math.round(pct))}
-                <div class="ministats">
-                    ${miniStat(longest ? longest.toFixed(longest >= 10 ? 0 : 1) + 'h' : '—', 'Longest')}
-                    ${miniStat(count, 'Fasts')}
-                    ${miniStat(count ? hitRate + '%' : '—', 'Goals Hit')}
-                </div>
-                <div class="actions">
-                    <button class="btn ${done ? 'btn-good' : 'btn-danger'}" data-action="fast-end" data-id="${h.id}">${done ? '✓ Finish fast' : 'End fast'}</button>
-                    <button class="btn" style="flex:0 0 auto;padding:13px 14px;background:var(--card2);border:1px solid var(--line);color:var(--muted)" data-action="fast-adjust" data-id="${h.id}">Adjust start</button>
-                </div>
-            </div>`;
+    // Last N days as small cells, oldest → today. For weekday-only trackers the
+    // strip shows scheduled days only, so weekends don't read as gaps.
+    function strip(h, n = 10) {
+        const cells = [];
+        for (let i = 0, d = dayStart(new Date()); cells.length < n && i < 60; i++, d = addDays(d, -1)) {
+            const k = localKey(d), today = i === 0;
+            let c;
+            if (h.type === 'build') {
+                const s = buildDay(h, k);
+                c = s === 'done' ? 'done' : s === 'skip' ? 'rest' : s === 'off' ? 'off' : '';
+            } else {
+                if (!isScheduled(h, d) && !(h.outcomes || {})[k]) continue;
+                const s = discDay(h, k);
+                c = s === 'open' ? '' : s;
+            }
+            cells.unshift(`<i class="${c}${today ? ' today' : ''}"></i>`);
         }
+        return `<div class="strip" aria-hidden="true">${cells.join('')}</div>`;
+    }
 
-        // ── idle: pick a goal, start when ready ──
-        const last = (h.fasts || [])[Math.max(0, (h.fasts || []).length - 1)];
-        return `<div class="card" style="--accent:${accent}">
-            ${cardTop(h)}
-            <div class="streak">
-                <div class="big">${count}</div>
-                <div class="unit">${count === 1 ? 'FAST LOGGED' : 'FASTS LOGGED'}</div>
-                <div class="clock">${last ? 'Last: ' + (last.hours || 0).toFixed(1) + 'h ' + (last.hit ? '· goal hit ✓' : 'of ' + last.goal + 'h') : 'No fasts yet — pick a goal'}</div>
+    function holdBtn(h) {
+        return `<button class="hold" data-hold="checkin" data-action="hold" data-id="${h.id}" aria-label="Hold to check in ${esc(h.name)}">
+            <svg width="48" height="48" viewBox="0 0 48 48"><circle class="trk" cx="24" cy="24" r="21" fill="none" stroke-width="3"/>
+            <circle class="prog" cx="24" cy="24" r="21" fill="none" stroke-width="3" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg>
+            <span>✓</span></button>`;
+    }
+
+    function buildRow(h) {
+        const streak = buildStreak(h), s = buildDay(h, todayKey()), left = skipsLeft(h);
+        const sub = `<div class="sub"><b>${streak}</b> day streak · ${left ? left + ' skip left this week' : 'skip used this week'}</div>`;
+        const act = s === 'done' ? `<div class="done-dot" aria-label="Done today">✓</div>`
+                  : s === 'skip' ? `<span class="tag">Skipped</span>`
+                  : holdBtn(h);
+        return [sub + strip(h), act];
+    }
+
+    function discRow(h) {
+        const streak = discStreak(h), adh = adherence(h, 30), today = (h.outcomes || {})[todayKey()];
+        const sub = `<div class="sub"><b>${streak}</b> on plan${adh != null ? ` · ${adh}% (30d)` : ''}</div>`;
+        let act;
+        if (today === 'win') act = `<span class="tag win">✓ On plan</span>`;
+        else if (today === 'loss') act = `<span class="tag loss">✕ Broke</span>`;
+        else if (today === 'rest') act = `<span class="tag">No session</span>`;
+        else if (isRestDay(h)) act = `<span class="tag">${h.preset === 'trading' ? 'Market closed' : 'Rest day'}</span>`;
+        else act = `<button class="cb no" data-action="disc-loss" data-id="${h.id}" aria-label="Broke rules">✕</button>
+                    <button class="cb ok" data-action="disc-win" data-id="${h.id}" aria-label="Followed rules">✓</button>`;
+        const logged = today || isRestDay(h);
+        return [sub + strip(h, logged ? 10 : 8), act];   // two buttons need the room
+    }
+
+    function quitRow(h) {
+        const ms = quitMs(h), { clean, total } = cleanStats(h, 30);
+        const pct = total ? clean / total * 100 : 100;
+        const sub = `<div class="sub"><span class="big-sub" data-live="${h.id}:qclock">${fmtQuitClock(ms)}</span></div>
+            <div class="sub">${clean} of ${total} days clean${(h.cravings || []).length ? ` · ${h.cravings.length} urges beaten` : ''}</div>
+            <div class="cleanbar"><div style="width:${pct.toFixed(0)}%"></div></div>`;
+        return [sub, `<button class="pill" data-action="craving" data-id="${h.id}">Hold</button>`];
+    }
+
+    function fastIdleRow(h) {
+        const last = (h.fasts || [])[(h.fasts || []).length - 1];
+        const sub = `<div class="sub">${last ? `Last <b>${(last.hours || 0).toFixed(1)}h</b> ${last.hit ? '· goal hit ✓' : 'of ' + last.goal + 'h'}` : 'No fasts yet'} · goal ${h.goalHours || 16}h</div>`;
+        return [sub, `<button class="pill acc" data-action="fast-start" data-id="${h.id}">Start</button>`];
+    }
+
+    /* Active fast: a ring filling toward the goal, ticks at each stage boundary. */
+    const RING_R = 58, RING_C = 2 * Math.PI * RING_R;
+    function fastRing(h, size = 140) {
+        const goal = h.goalHours || 16, hours = fastMs(h) / HOUR, pct = Math.min(1, hours / goal);
+        const ticks = FAST_STAGES.filter(s => s[0] > 0 && s[0] < goal).map(s => {
+            const a = s[0] / goal * 360;
+            return `<line x1="70" y1="4" x2="70" y2="20" stroke="var(--card)" stroke-width="3" transform="rotate(${a.toFixed(1)} 70 70)"/>`;
+        }).join('');
+        return `<svg width="${size}" height="${size}" viewBox="0 0 140 140" aria-hidden="true">
+            <circle cx="70" cy="70" r="${RING_R}" fill="none" stroke="var(--faint)" stroke-width="12"/>
+            <circle data-live="${h.id}:ring" cx="70" cy="70" r="${RING_R}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round"
+                stroke-dasharray="${(RING_C * pct).toFixed(1)} ${RING_C.toFixed(1)}" transform="rotate(-90 70 70)"/>
+            ${ticks}</svg>`;
+    }
+    function fastLive(h) {   // the strings the tick keeps fresh
+        const goal = h.goalHours || 16, ms = fastMs(h), hours = ms / HOUR;
+        const left = goal * HOUR - ms;
+        return {
+            fclock: fmtFastClock(ms),
+            fpct: `of ${goal}h · ${Math.min(999, Math.floor(hours / goal * 100))}%`,
+            fleft: left > 0 ? `<b>${fmtDur(left)}</b> to go` : `<b>Goal reached</b> · +${fmtDur(-left)}`,
+            fstage: FAST_STAGES[stageIdxAt(hours)][1] + ' ≈',
+            ring: (RING_C * Math.min(1, hours / goal)).toFixed(1) + ' ' + RING_C.toFixed(1),
+        };
+    }
+    function fastCard(h, inPage) {
+        const accent = h.color || '#a371f7', L = fastLive(h), goal = h.goalHours || 16;
+        const start = new Date(h.fastStart).getTime(), done = fastMs(h) >= goal * HOUR;
+        return `<div class="fast" style="--accent:${accent}">
+            <div class="fast-top" ${inPage ? '' : `data-action="open" data-id="${h.id}"`}>
+                <div class="ringwrap">${fastRing(h)}
+                    <div class="ringc"><div class="el" data-live="${h.id}:fclock">${L.fclock}</div><div class="lab" data-live="${h.id}:fpct">${L.fpct}</div></div></div>
+                <div class="fi">
+                    <div class="nm">${h.icon || '⏳'} ${esc(h.name)}</div>
+                    <div class="stagechip" data-live="${h.id}:fstage">${esc(L.fstage)}</div>
+                    <div class="kv">Started <b>${fmtDayTime(start)}</b><br>Goal <b>${fmtDayTime(start + goal * HOUR)}</b><br><span data-live="${h.id}:fleft">${L.fleft}</span></div>
+                </div>
             </div>
-            <div class="goalchips">
-                ${FAST_GOALS.map(g => `<button class="chip ${goal === g.h ? 'sel' : ''}" data-action="fast-goal" data-id="${h.id}" data-hours="${g.h}">${g.h}h</button>`).join('')}
-            </div>
-            <div class="stageline">${esc((FAST_GOALS.find(g => g.h === goal) || FAST_GOALS[0]).desc)}</div>
-            <div class="ministats" style="margin-top:12px">
-                ${miniStat(longest ? longest.toFixed(longest >= 10 ? 0 : 1) + 'h' : '—', 'Longest')}
-                ${miniStat(count ? hitRate + '%' : '—', 'Goals Hit')}
-            </div>
-            <div class="actions">
-                <button class="btn btn-good" data-action="fast-start" data-id="${h.id}">▶ Start ${goal}h fast</button>
+            <div class="actions" style="margin-top:14px">
+                <button class="btn btn-plain" data-action="fast-adjust" data-id="${h.id}">Adjust start</button>
+                <button class="btn ${done ? 'btn-good' : 'btn-danger'}" data-action="fast-end" data-id="${h.id}" data-live-end="${h.id}">${done ? '✓ Finish fast' : 'End fast'}</button>
             </div>
         </div>`;
     }
 
-    function discCard(h, accent) {
-        const streak = discStreak(h);
-        const best = Math.max(bestDiscStreak(h), streak);
-        const { wins, losses, total } = discCounts(h);
-        const today = (h.outcomes || {})[todayKey()];
-        const rate = total ? Math.round(wins / total * 100) : 0;
-
-        let pct, ptxt;
-        if (h.goalDays) { pct = Math.min(100, (streak / h.goalDays) * 100); ptxt = `${streak} / ${h.goalDays} day goal`; }
-        else { const nx = nextBuild(streak); if (nx) { pct = (streak / nx) * 100; ptxt = `Next: ${nx} disciplined days`; } else { pct = 100; ptxt = 'Ice cold. Machine-like.'; } }
-
-        const status = today === 'win' ? '✓ Rules followed today'
-                     : today === 'loss' ? '✕ Broke the rules today'
-                     : isRestDay(h) ? (h.preset === 'trading' ? 'Market closed — rest day' : 'Rest day')
-                     : 'Not logged today';
-
-        const mini = [];
-        mini.push(miniStat(best + 'd', 'Best'));
-        mini.push(miniStat(total ? rate + '%' : '—', 'Win Rate'));
-        mini.push(miniStat(wins, 'Wins'));
-        mini.push(miniStat(losses, 'Losses'));
-
-        return `<div class="card" style="--accent:${accent}">
-            ${cardTop(h)}
-            <div class="streak">
-                <div class="big">${streak}</div>
-                <div class="unit">${streak === 1 ? 'DAY ON PLAN' : 'DAYS ON PLAN'}</div>
-                <div class="clock">${status}</div>
-            </div>
-            ${progress(pct, ptxt, Math.round(pct))}
-            <div class="ministats">${mini.join('')}</div>
-            <div class="actions">
-                <button class="btn btn-good ${today === 'win' ? 'on' : ''}" data-action="disc-win" data-id="${h.id}">✓ Followed rules</button>
-                <button class="btn btn-danger ${today === 'loss' ? 'on' : ''}" data-action="disc-loss" data-id="${h.id}">✕ Broke rules</button>
-            </div>
-        </div>`;
+    // Push the live strings into whatever is on screen (home rows, fast card, detail page).
+    function setLive(id, field, html) {
+        document.querySelectorAll(`[data-live="${id}:${field}"]`).forEach(el => {
+            if (field === 'ring') el.setAttribute('stroke-dasharray', html);
+            else if (el.innerHTML !== html) el.innerHTML = html;
+        });
     }
-
-    function quitCard(h, accent) {
-        const ms = quitMs(h);
-        const days = Math.floor(ms / DAY);
-        const big = days >= 1 ? days : Math.floor(ms / HOUR);
-        const unit = days >= 1 ? (days === 1 ? 'DAY CLEAN' : 'DAYS CLEAN') : 'HOURS CLEAN';
-        const best = Math.max(bestMs(h), ms);
-        const relapses = (h.relapses || []).length;
-
-        // progress toward goal (if set) else next milestone
-        let pct, ptxt;
-        if (h.goalDays) {
-            pct = Math.min(100, (ms / (h.goalDays * DAY)) * 100);
-            ptxt = `${days} / ${h.goalDays} day goal`;
-        } else {
-            const nx = nextQuit(ms);
-            if (nx) { pct = (ms / nx[0]) * 100; ptxt = `Next: ${nx[1]}`; }
-            else { pct = 100; ptxt = 'Legend status'; }
-        }
-
-        const mini = [];
-        mini.push(miniStat(Math.floor(best / DAY) + 'd', 'Best'));
-        mini.push(miniStat(relapses, 'Resets'));
-        if ((h.cravings || []).length) mini.push(miniStat(h.cravings.length, 'Urges Beat'));
-        if (h.costPerDay) mini.push(miniStat(fmtMoney(h.costPerDay * (ms / DAY)), 'Saved'));
-        else if (h.hoursPerDay) mini.push(miniStat(fmtHours(h.hoursPerDay * (ms / DAY)), 'Reclaimed'));
-
-        return `<div class="card" style="--accent:${accent}">
-            ${cardTop(h)}
-            <div class="streak">
-                <div class="big" data-id="${h.id}" data-kind="big">${big}</div>
-                <div class="unit">${unit}</div>
-                <div class="clock" data-id="${h.id}" data-kind="clock">${fmtClock(ms)}</div>
-            </div>
-            ${progress(pct, ptxt, Math.round(pct))}
-            <div class="ministats">${mini.join('')}</div>
-            <div class="actions">
-                <button class="btn btn-good" data-action="craving" data-id="${h.id}">Hold the line</button>
-                <button class="btn btn-danger" data-action="relapse" data-id="${h.id}" style="flex:0 0 auto;padding:13px 16px">Reset</button>
-            </div>
-        </div>`;
-    }
-
-    function buildCard(h, accent) {
-        const streak = buildStreak(h);
-        const done = (h.checkIns || []).includes(todayKey());
-        const best = Math.max(bestBuildStreak(h), streak);
-        const total = (h.checkIns || []).length;
-
-        let pct, ptxt;
-        if (h.goalDays) { pct = Math.min(100, (streak / h.goalDays) * 100); ptxt = `${streak} / ${h.goalDays} day goal`; }
-        else { const nx = nextBuild(streak); if (nx) { pct = (streak / nx) * 100; ptxt = `Next: ${nx} days`; } else { pct = 100; ptxt = 'Unstoppable'; } }
-
-        return `<div class="card" style="--accent:${accent}">
-            ${cardTop(h)}
-            <div class="streak">
-                <div class="big">${streak}</div>
-                <div class="unit">DAY STREAK</div>
-                <div class="clock">${done ? '✓ Done today' : 'Not yet today'}</div>
-            </div>
-            ${progress(pct, ptxt, Math.round(pct))}
-            <div class="ministats">${miniStat(best, 'Best')}${miniStat(total, 'Total Days')}</div>
-            <div class="actions">
-                ${done
-                    ? `<button class="btn btn-done" data-action="uncheck" data-id="${h.id}">✓ Done — undo</button>`
-                    : `<button class="btn btn-good" data-action="checkin" data-id="${h.id}">✓ Check in today</button>`}
-            </div>
-        </div>`;
-    }
-
-    function cardTop(h) {
-        return `<div class="card-top">
-            <div class="icon">${h.icon || '⭐'}</div>
-            <div class="card-head">
-                <div class="name">${esc(h.name)}</div>
-                <div class="cat">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build' : h.type === 'disc' ? 'Rules' : h.type === 'fast' ? 'Fasting' : 'Quit'}</div>
-            </div>
-            <button class="info-btn" data-action="details" data-id="${h.id}" aria-label="Details">ⓘ</button>
-        </div>`;
-    }
-    const miniStat = (b, s) => `<div class="m"><b>${b}</b><span>${esc(s)}</span></div>`;
-    const progress = (pct, txt, n) => `<div class="progress">
-        <div class="ptop"><span>${esc(txt)}</span><b>${n}%</b></div>
-        <div class="bar"><div class="fill" style="width:${Math.max(2, Math.min(100, pct))}%"></div></div>
-    </div>`;
 
     /* ============================================================
        LIVE TICK — update quit counters + milestone + reminders
        ============================================================ */
-    let lastMinute = '';
+    let lastMinute = '', lastDay = todayKey();
     function tick() {
         let dirty = false;
+        if (todayKey() !== lastDay) { lastDay = todayKey(); render(); }   // midnight: due lists reset
         for (const h of state.habits) {
-            // active fasts: live clock + stage-crossing + goal-hit (in-app path;
+            // active fasts: live ring/clock + stage-crossing + goal-hit (in-app path;
             // closed-app alerts are pre-scheduled by syncScheduledReminders)
             if (h.type === 'fast') {
                 if (!h.fastStart) continue;
-                const ms = fastMs(h), hours = ms / HOUR;
-                const big = document.querySelector(`.big[data-id="${h.id}"][data-kind="big"]`);
-                const clk = document.querySelector(`.clock[data-id="${h.id}"][data-kind="clock"]`);
-                if (clk) clk.textContent = fmtFastClock(ms);
-                if (big) big.textContent = Math.floor(hours);
+                const ms = fastMs(h), hours = ms / HOUR, L = fastLive(h);
+                for (const f of ['fclock', 'fpct', 'fleft', 'fstage', 'ring']) setLive(h.id, f, L[f]);
                 const idx = stageIdxAt(hours);
                 if (h._lastStage == null) { h._lastStage = idx; dirty = true; }
                 else if (idx > h._lastStage) {
                     h._lastStage = idx; dirty = true;
                     const st = FAST_STAGES[idx];
                     beep(660, 90); haptic(ImpactStyle.Medium);
-                    toast(`${st[0]}h — ${st[1]}`);
-                    notify(`${st[1]} (${st[0]}h)`, st[2]);
-                    const stEl = document.querySelector(`.stageline[data-id="${h.id}"][data-kind="stage"]`);
-                    if (stEl) stEl.innerHTML = `<b>${esc(st[1])}</b> — ${esc(st[2])}`;
+                    toast(`≈${st[0]}h — ${st[1]}`);
+                    notify(`${st[1]} (≈${st[0]}h)`, st[2]);
                 }
                 if (!h._goalHit && hours >= (h.goalHours || 16)) {
                     h._goalHit = true; dirty = true;
@@ -1011,13 +1174,8 @@
             }
             if (h.type !== 'quit') continue;
             const ms = quitMs(h);
-            const big = document.querySelector(`.big[data-id="${h.id}"][data-kind="big"]`);
-            const clk = document.querySelector(`.clock[data-id="${h.id}"][data-kind="clock"]`);
-            if (clk) clk.textContent = fmtClock(ms);
-            if (big) {
-                const days = Math.floor(ms / DAY);
-                big.textContent = days >= 1 ? days : Math.floor(ms / HOUR);
-            }
+            setLive(h.id, 'qclock', fmtQuitClock(ms));
+            setLive(h.id, 'qdays', Math.floor(ms / DAY) + 'd');
             // milestone celebration
             const hitCount = achievedQuit(ms).length;
             if (h._lastMilestone == null) { h._lastMilestone = hitCount; dirty = true; } // baseline; don't fire retroactively
@@ -1116,16 +1274,18 @@
         stakes.push(`<div class="m"><b>${beaten}</b><span>Urges Beat</span></div>`);
 
         const reasons = reasonsFor(h);
-        const why = reasons.length
-            ? `<div class="cr-why"><div class="t">Why you started</div><ul>${reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>` : '';
+        const why = (h.plan ? `<div class="cr-why"><div class="t">Your plan</div><div style="font-size:.95rem;line-height:1.5">${esc(h.plan)}</div></div>` : '') +
+            (reasons.length ? `<div class="cr-why"><div class="t">Why you started</div><ul>${reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul></div>` : '');
 
         openFull(`
             <div class="craving" style="--accent:${h.color || '#58a6ff'}">
                 <button class="cr-x" data-action="craving-close" aria-label="Close">✕</button>
                 <div class="cr-head">Ride the wave</div>
-                <div class="cr-sub">A craving peaks and fades in a few minutes. Breathe with the circle — don't act, just outlast it.</div>
+                <div class="cr-sub">Urges peak and pass within minutes. Notice it, name it, breathe with the circle — you don't have to act on it.</div>
                 <div class="cr-orb-wrap"><div class="cr-orb" id="crOrb"><span class="cr-label" id="crLabel">Breathe in</span></div></div>
-                <div class="cr-timer" id="crTimer">0:00 <span>holding strong</span></div>
+                <div class="seg" role="group" aria-label="Breathing pattern">${Object.entries(BREATHS).map(([k, b]) =>
+                    `<button type="button" class="${breathKey() === k ? 'sel' : ''}" data-action="breath" data-breath="${k}">${b.name}</button>`).join('')}</div>
+                <div class="cr-timer" id="crTimer" style="margin-top:10px">0:00 <span>holding strong</span></div>
                 <div class="cr-stakes">${stakes.join('')}</div>
                 ${why}
                 <div class="cr-spacer"></div>
@@ -1139,9 +1299,18 @@
         haptic(ImpactStyle.Medium);
     }
 
-    // 4-7-8 breathing: inhale 4s, hold 7s, exhale 8s — a known craving/anxiety technique.
+    /* Breathing patterns. Default: cyclic sighing (two inhales, long exhale) —
+       in a 28-day RCT (Balban et al., 2023) it improved mood more than box
+       breathing or mindfulness. 4-7-8 stays available for anyone who prefers it. */
+    const BREATHS = {
+        sigh: { name: 'Cyclic sigh', phases: [['Breathe in', 2, 1.3], ['Top up', 1, 1.42], ['Long breath out', 6, 1]] },
+        f478: { name: '4-7-8', phases: [['Breathe in', 4, 1.42], ['Hold', 7, 1.42], ['Breathe out', 8, 1]] },
+    };
+    const breathKey = () => BREATHS[state.settings.breath] ? state.settings.breath : 'sigh';
+    let breathTimers = [];
     function startBreathing() {
-        const phases = [['Breathe in', 4, 1.42], ['Hold', 7, 1.42], ['Breathe out', 8, 1]];
+        breathTimers.forEach(clearTimeout); breathTimers = [];
+        const phases = BREATHS[breathKey()].phases;
         let i = 0;
         (function step() {
             const orb = document.getElementById('crOrb'), lab = document.getElementById('crLabel');
@@ -1151,8 +1320,14 @@
             orb.style.transitionDuration = secs + 's';
             orb.style.transform = 'scale(' + scale + ')';
             i = (i + 1) % phases.length;
-            cravingTimers.push(setTimeout(step, secs * 1000));
+            breathTimers.push(setTimeout(step, secs * 1000));
         })();
+    }
+    function setBreath(k) {
+        if (!BREATHS[k]) return;
+        state.settings.breath = k; save();
+        document.querySelectorAll('[data-action="breath"]').forEach(b => b.classList.toggle('sel', b.dataset.breath === k));
+        startBreathing();
     }
 
     function startCravingTimer() {
@@ -1165,6 +1340,7 @@
     }
 
     function stopCraving() {
+        breathTimers.forEach(clearTimeout); breathTimers = [];
         cravingTimers.forEach(t => { clearTimeout(t); clearInterval(t); });
         cravingTimers = []; cravingStart = 0;
     }
@@ -1193,6 +1369,7 @@
         h.checkIns = h.checkIns || [];
         const k = todayKey();
         if (!h.checkIns.includes(k)) h.checkIns.push(k);
+        h.skips = (h.skips || []).filter(x => x !== k);
         const streak = buildStreak(h);
         save(); render();
         beep(720, 80); haptic(ImpactStyle.Medium);
@@ -1230,8 +1407,18 @@
             <label class="f">What happened? (optional)</label>
             <input class="f" id="discNote" placeholder="Chased the 1m, moved my stop, FOMO entry...">
             <button class="save-btn" style="background:linear-gradient(135deg,#ff4d4d,#ff7a7a)" data-action="confirm-disc-loss" data-id="${id}">Log it — tomorrow I trade the plan</button>
+            <button class="text-btn" data-action="disc-rest" data-id="${id}">No session today instead (doesn't count either way)</button>
             <button class="text-btn" data-action="close">Cancel</button>
         `);
+    }
+    function discRest(id) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        const k = todayKey();
+        h.outcomes = h.outcomes || {};
+        h.outcomes[k] = 'rest';
+        if (h.lossNotes) delete h.lossNotes[k];
+        save(); closeSheet(); render(); haptic(ImpactStyle.Light);
+        toast('Logged: no session today. Streak unaffected.');
     }
     function confirmDiscLoss(id) {
         const h = state.habits.find(x => x.id === id); if (!h) return;
@@ -1392,11 +1579,11 @@
                     <label class="f">Emoji</label>
                     <input class="f" id="fIcon" value="${esc(draft.icon)}" style="text-align:center;font-size:1.4rem">
                 </div>
-                <div>
-                    <label class="f">Color</label>
-                    <input class="f" id="fColor" type="color" value="${draft.color}" style="height:50px;padding:4px">
-                </div>
+                <div></div>
             </div>
+            <label class="f">Color</label>
+            <div class="swatches">${(PALETTE.includes(draft.color) ? PALETTE : [draft.color, ...PALETTE]).map(c =>
+                `<button type="button" class="sw ${c === draft.color ? 'sel' : ''}" style="background:${esc(c)}" data-action="set-color" data-color="${esc(c)}" aria-label="Color ${esc(c)}"></button>`).join('')}</div>
 
             <label class="f">Type</label>
             <div class="type-toggle">
@@ -1428,7 +1615,9 @@
                 </div>
             </div>
             <label class="f">When did this streak start?</label>
-            <input class="f" id="fStart" type="datetime-local" value="${draft.startLocal || nowLocal()}">`}
+            <input class="f" id="fStart" type="datetime-local" value="${draft.startLocal || nowLocal()}">
+            <label class="f">If-then plan for your top trigger (optional)</label>
+            <textarea class="f" id="fPlan" rows="2" placeholder="If I want a coffee after 2pm, then I drink sparkling water and walk for 5 minutes.">${esc(draft.plan || '')}</textarea>`}
 
             <label class="f">Daily reminder (optional)</label>
             <input class="f" id="fReminder" type="time" value="${esc(draft.reminderTime)}">
@@ -1474,6 +1663,7 @@
         if (wk) draft.reminderWeekdays = wk.checked;
         if (g('fReasons') != null) draft.reasonsText = g('fReasons');
         if (g('fStart') != null) draft.startLocal = g('fStart');
+        if (g('fPlan') != null) draft.plan = g('fPlan');
     }
     function setType(t) { syncDraftFromInputs(); draft.type = t; renderForm(); }
     function setFormGoalHours(hrs) { syncDraftFromInputs(); draft.goalHours = hrs; renderForm(); }
@@ -1491,7 +1681,8 @@
             hoursPerDay: parseFloat(draft.hoursPerDay) || 0,
             reminderTime: draft.reminderTime || '',
             reminderWeekdays: !!draft.reminderWeekdays,
-            reasons: (draft.reasonsText || '').split('\n').map(s => s.trim()).filter(Boolean)
+            reasons: (draft.reasonsText || '').split('\n').map(s => s.trim()).filter(Boolean),
+            plan: (draft.plan || '').trim()
         };
         if (draft.editing) {
             const h = state.habits.find(x => x.id === draft.id);
@@ -1505,7 +1696,7 @@
                 ? new Date(draft.startLocal).toISOString() : new Date().toISOString();
             state.habits.push({
                 id: uid(), createdDate: startDate, startDate,
-                relapses: [], checkIns: [], outcomes: {}, fasts: [], fastStart: null,
+                relapses: [], checkIns: [], skips: [], outcomes: {}, fasts: [], fastStart: null, gapsFrom: todayKey(),
                 _lastMilestone: 0, ...common
             });
         }
@@ -1518,99 +1709,319 @@
     }
 
     /* ============================================================
-       DETAILS / INFO MODAL
+       DETAIL PAGE — pushed full screen from a row. History first:
+       heatmap (tap any day to edit), weekday breakdown, notes/triggers,
+       fasting chart + log; then timeline, milestones and tips (collapsed).
        ============================================================ */
-    function openDetails(id) {
-        const h = state.habits.find(x => x.id === id); if (!h) return;
+    let pageId = null;
+    const pageEl = () => document.getElementById('page');
+    function openPage(id) {
+        if (!state.habits.find(x => x.id === id)) return;
+        pageId = id;
+        renderPage();
+        const p = pageEl(); p.hidden = false; p.scrollTop = 0;
+        document.body.style.overflow = 'hidden';
+    }
+    function closePage() {
+        pageId = null;
+        const p = pageEl(); p.hidden = true; p.innerHTML = '';
+        document.body.style.overflow = '';
+        renderHome();
+    }
+    function typeLabel(h) {
+        return h.type === 'build' ? 'Build habit' : h.type === 'disc' ? 'Rules log' : h.type === 'fast' ? 'Fasting' : 'Quit';
+    }
+
+    function renderPage() {
+        const h = state.habits.find(x => x.id === pageId);
+        if (!h) { closePage(); return; }
         const p = presetByKey(h.preset || 'custom');
+        const meta = [esc(h.cat || 'Custom'), typeLabel(h)];
+        if (h.reminderTime) meta.push('reminder ' + esc(h.reminderTime) + (h.reminderWeekdays ? ' weekdays' : ''));
         let body = '';
+        if (h.type === 'build') body = buildPage(h);
+        else if (h.type === 'disc') body = discPage(h);
+        else if (h.type === 'fast') body = fastPage(h);
+        else body = quitPage(h);
 
-        if (h.type === 'build') {
-            const streak = buildStreak(h), best = Math.max(bestBuildStreak(h), streak);
-            body += statsBlock([['Current', streak + 'd'], ['Best', best + 'd'], ['Total', (h.checkIns||[]).length + 'd']]);
-        } else if (h.type === 'disc') {
-            const streak = discStreak(h), best = Math.max(bestDiscStreak(h), streak);
-            const { wins, losses, total } = discCounts(h);
-            body += statsBlock([['Streak', streak + 'd'], ['Best', best + 'd'],
-                ['Win Rate', total ? Math.round(wins / total * 100) + '%' : '—'], ['Wins', wins], ['Losses', losses]]);
-        } else if (h.type === 'fast') {
-            const { count, longest, hitRate } = fastStats(h);
-            const pairs = [['Fasts', count], ['Longest', longest ? longest.toFixed(1) + 'h' : '—'], ['Goals Hit', count ? hitRate + '%' : '—']];
-            if (h.fastStart) pairs.unshift(['Active', (fastMs(h) / HOUR).toFixed(1) + 'h']);
-            body += statsBlock(pairs);
-        } else {
-            const ms = quitMs(h), best = Math.max(bestMs(h), ms);
-            const sav = [];
-            if (h.costPerDay) sav.push(['Saved', fmtMoney(h.costPerDay * ms / DAY)]);
-            if (h.hoursPerDay) sav.push(['Reclaimed', fmtHours(h.hoursPerDay * ms / DAY)]);
-            const beaten = (h.cravings || []).length;
-            body += statsBlock([['Current', Math.floor(ms/DAY) + 'd'], ['Best', Math.floor(best/DAY) + 'd'], ['Resets', (h.relapses||[]).length], ...(beaten ? [['Urges Beat', beaten]] : []), ...sav]);
-        }
-
-        const detailReasons = reasonsFor(h);
-        if (detailReasons.length) body += `<div class="why">${detailReasons.map(esc).join(' · ')}</div>`;
-
-        // fasting: stage-by-stage explainer + goal guide + session history
+        // reference material, collapsed so history stays on top
+        let more = '';
+        const reasons = reasonsFor(h);
+        if (reasons.length) more += `<div class="why">${reasons.map(esc).join(' · ')}</div>`;
         if (h.type === 'fast') {
-            const curHours = h.fastStart ? fastMs(h) / HOUR : 0;
-            const reachHours = h.fastStart ? curHours : fastStats(h).longest;   // idle: light up what your longest fast reached
-            body += `<div class="sec-title">The fasting timeline — hour by hour</div><div class="tl">` +
-                FAST_STAGES.map(([hr, nm, what]) => `<div class="tl-item ${reachHours >= hr && (h.fastStart || reachHours > 0) ? 'hit' : ''}">
-                    <div class="when">${hr}h — ${esc(nm)}</div><div class="what">${esc(what)}</div></div>`).join('') + `</div>`;
-            body += `<div class="sec-title">Which duration does what</div>` +
+            const cur = h.fastStart ? fastMs(h) / HOUR : fastStats(h).longest;
+            more += `<div class="sec-title">The fasting timeline — approximate</div><div class="tl">` +
+                FAST_STAGES.map(([hr, nm, what]) => `<div class="tl-item ${cur >= hr && cur > 0 ? 'hit' : ''}">
+                    <div class="when">≈${hr}h — ${esc(nm)}</div><div class="what">${esc(what)}</div></div>`).join('') + `</div>`;
+            more += `<div class="sec-title">Which duration does what</div>` +
                 FAST_GOALS.map(g => `<div class="tl-item" style="padding-bottom:12px;margin-left:8px">
                     <div class="when" style="font-size:.85rem">${esc(g.name)}</div><div class="what">${esc(g.desc)}</div></div>`).join('');
-            if ((h.fasts || []).length) {
-                body += `<div class="sec-title">Fast log</div>`;
-                body += h.fasts.slice().reverse().slice(0, 8).map(f =>
-                    `<div class="hist-item"><span>${f.hit ? '✅' : '◻'} ${new Date(f.start).toLocaleDateString()}</span><span>${(f.hours || 0).toFixed(1)}h of ${f.goal}h</span></div>`).join('');
-            }
         }
-
-        // milestone timeline
         if (p.timeline && p.timeline.length) {
             const ms = h.type === 'build' ? buildStreak(h) * DAY : h.type === 'disc' ? discStreak(h) * DAY : quitMs(h);
-            body += `<div class="sec-title">What's happening</div><div class="tl">` +
-                p.timeline.map(([when, what]) => {
-                    const hit = ms >= timelineMs(when);   // lit once the label's lower bound is reached
-                    return `<div class="tl-item ${hit?'hit':''}"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div></div>`;
-                }).join('') + `</div>`;
+            more += `<div class="sec-title">What's happening</div><div class="tl">` +
+                p.timeline.map(([when, what]) => `<div class="tl-item ${ms >= timelineMs(when) ? 'hit' : ''}"><div class="when">${esc(when)}</div><div class="what">${esc(what)}</div></div>`).join('') + `</div>`;
         }
+        if (h.type !== 'fast') more += `<div class="sec-title">Milestones</div>` + milestoneList(h);
+        if (p.tips && p.tips.length) more += `<div class="sec-title">Stay-strong tips</div><ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
+        if (h.cat === 'Substance') more += `<div class="disclaimer">Info is general and motivational — not medical advice. Heavy alcohol or other physical dependence can make withdrawal dangerous; talk to a doctor.</div>`;
+        if (h.type === 'fast') more += `<div class="disclaimer">General information, not medical advice. Stage timings are approximate and vary a lot between people; autophagy and immune effects come mainly from animal studies, and long-term cardiovascular effects of very short eating windows are unsettled. Don't fast if you're pregnant or breastfeeding, underweight, have a history of disordered eating, or take insulin / glucose-lowering medication without a doctor's supervision. Get medical clearance before anything past 48h.</div>`;
 
-        // milestones list (fast type: the stage timeline above already covers it)
-        if (h.type !== 'fast') body += `<div class="sec-title">Milestones</div>` + milestoneList(h);
-
-        // history
-        if (h.type === 'disc' && Object.keys(h.outcomes || {}).length) {
-            body += `<div class="sec-title">Session log</div>`;
-            body += Object.keys(h.outcomes).sort().reverse().slice(0, 10).map(k => {
-                const win = h.outcomes[k] === 'win';
-                const note = (h.lossNotes || {})[k];
-                return `<div class="hist-item"><span>${win ? '✅' : '❌'} ${new Date(k + 'T00:00:00').toLocaleDateString()}</span><span>${win ? 'on plan' : esc(note || 'broke rules')}</span></div>`;
-            }).join('');
-        }
-        if (h.type === 'quit' && (h.relapses||[]).length) {
-            body += `<div class="sec-title">Reset history</div>`;
-            body += h.relapses.slice().reverse().slice(0, 8).map(r =>
-                `<div class="hist-item"><span>${new Date(r.date).toLocaleDateString()}</span><span>${esc(r.note || '—')}</span></div>`).join('');
-        }
-
-        if (p.tips && p.tips.length) {
-            body += `<div class="sec-title">Stay-strong tips</div><ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>`;
-        }
-
-        if (h.cat === 'Substance') body += `<div class="disclaimer">Info is general and motivational — not medical advice. Heavy alcohol or other physical dependence can make withdrawal dangerous; talk to a doctor.</div>`;
-        if (h.type === 'fast') body += `<div class="disclaimer">General information, not medical advice — stage timings vary by person and much of the longer-fast research is early. Do not fast if you are pregnant or breastfeeding, underweight, have a history of disordered eating, or take insulin / glucose-lowering medication without a doctor's supervision. Get medical clearance before anything past 48h.</div>`;
-
-        openSheet(`
-            <div class="sheet-grab"></div>
-            <h2>${h.icon} ${esc(h.name)}</h2>
-            <p class="sub">${esc(h.cat || 'Custom')} · ${h.type === 'build' ? 'Build habit' : h.type === 'disc' ? 'Rules / discipline log' : h.type === 'fast' ? 'Timed fasting sessions' : 'Quit / abstain'}</p>
+        pageEl().innerHTML = `<div class="page-in" style="--accent:${h.color || '#58a6ff'}">
+            <div class="navbar"><button class="navbtn" data-action="page-back">‹ Today</button>
+                <button class="navbtn" data-action="edit" data-id="${h.id}">Edit</button></div>
+            <div class="p-head"><div class="ic">${h.icon || '⭐'}</div>
+                <div><h2>${esc(h.name)}</h2><div class="meta">${meta.join(' · ')}</div></div></div>
             ${body}
-            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="edit" data-id="${h.id}">Edit tracker</button>
-            <button class="text-btn" data-action="close">Close</button>
-        `);
+            <details class="more"><summary>Timeline, milestones &amp; tips</summary><div class="inner">${more}</div></details>
+        </div>`;
     }
+    const tiles = pairs => `<div class="ministats">${pairs.map(([b, s]) => `<div class="m"><b>${b}</b><span>${esc(s)}</span></div>`).join('')}</div>`;
+    const secT = (t, right) => `<div class="sec-h"><span>${esc(t)}</span>${right ? `<span style="text-transform:none">${right}</span>` : ''}</div>`;
+
+    /* ----- heatmap: WEEKS columns × Mon..Sun rows, ending this week ----- */
+    const HM_WEEKS = 18;
+    function heatmap(h, cellFor) {
+        const today = dayStart(new Date());
+        const monday = addDays(today, -((today.getDay() + 6) % 7));
+        const first = addDays(monday, -7 * (HM_WEEKS - 1));
+        const cells = [], months = [];
+        let lastMonth = -1;
+        for (let w = 0; w < HM_WEEKS; w++) {
+            const colStart = addDays(first, 7 * w);
+            const m = colStart.getMonth();
+            months.push(`<span>${m !== lastMonth && w < HM_WEEKS - 1 ? colStart.toLocaleDateString([], { month: 'short' }) : ''}</span>`);
+            lastMonth = m;
+            for (let r = 0; r < 7; r++) {
+                const d = addDays(colStart, r), k = localKey(d);
+                const [cls, editable, label] = cellFor(k, d);
+                const t = k === localKey(today) ? ' today' : '';
+                cells.push(editable
+                    ? `<button class="${cls}${t}" data-action="day" data-id="${h.id}" data-date="${k}" aria-label="${esc(d.toDateString() + ': ' + label)}"></button>`
+                    : `<i class="${cls}${t}" title="${esc(label)}"></i>`);
+            }
+        }
+        return `<div class="hm-wrap"><div class="hm-days"><span>M</span><span></span><span>W</span><span></span><span>F</span><span></span><span></span></div>
+            <div><div class="hm">${cells.join('')}</div><div class="hm-months">${months.join('')}</div></div></div>`;
+    }
+    const legend = items => `<div class="legend">${items.map(([cls, style, t]) => `<span><i class="${cls}" style="${style}"></i>${esc(t)}</span>`).join('')}</div>`;
+
+    /* ----- weekday breakdown: rate per weekday over the last 12 weeks ----- */
+    function weekdayBars(h, dayFn, weekdaysOnly) {
+        const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const good = Array(7).fill(0), all = Array(7).fill(0);
+        for (let i = 0; i < 84; i++) {
+            const d = addDays(new Date(), -i), idx = (d.getDay() + 6) % 7;
+            const r = dayFn(localKey(d), d);
+            if (r == null) continue;
+            all[idx]++; if (r) good[idx]++;
+        }
+        const idxs = weekdaysOnly ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6];
+        const rates = idxs.map(i => all[i] ? good[i] / all[i] : null);
+        const seen = rates.filter(r => r != null);
+        if (seen.reduce((a, _, i) => a + all[idxs[i]], 0) < 4) return '';
+        const avg = seen.reduce((a, b) => a + b, 0) / seen.length;
+        const bars = idxs.map((i, j) => {
+            const r = rates[j];
+            if (r == null) return `<div><span class="pc">—</span><div class="b" style="height:3px;opacity:.3"></div>${names[i]}</div>`;
+            const lo = r < avg - 0.1;
+            return `<div><span class="pc">${Math.round(r * 100)}%</span><div class="b${lo ? ' lo' : ''}" style="height:${Math.max(4, r * 64).toFixed(0)}px"></div>${names[i]}</div>`;
+        }).join('');
+        const worst = idxs.map((i, j) => [names[i], rates[j]]).filter(x => x[1] != null).sort((a, b) => a[1] - b[1])[0];
+        const insight = worst && worst[1] < avg - 0.1 ? `${worst[0]} is your weakest day (${Math.round(worst[1] * 100)}% vs ${Math.round(avg * 100)}% average).` : 'No weak day stands out.';
+        return secT('By weekday · last 12 weeks') + `<div class="panel"><div class="wkbars">${bars}</div><div class="insight">${insight}</div></div>`;
+    }
+
+    function buildPage(h) {
+        const streak = buildStreak(h), best = Math.max(bestBuildStreak(h), streak);
+        let done30 = 0, days30 = 0;
+        for (let i = 0; i < 30; i++) { const s = buildDay(h, localKey(addDays(new Date(), -i))); if (s === 'off' || s === 'skip') continue; if (i === 0 && s === 'miss') continue; days30++; if (s === 'done') done30++; }
+        const s = buildDay(h, todayKey()), left = skipsLeft(h);
+        const status = s === 'done' ? '<b>✓ Done today</b>' : s === 'skip' ? '<b>Skipped today</b> (streak kept)' : 'Not done yet today';
+        const actions = s === 'done' ? `<button class="btn btn-quiet" data-action="uncheck" data-id="${h.id}">Undo today</button>`
+            : s === 'skip' ? `<button class="btn btn-quiet" data-action="unskip" data-id="${h.id}" data-date="${todayKey()}">Undo skip</button>`
+            : `<button class="btn btn-good" data-action="checkin" data-id="${h.id}">✓ Check in today</button>
+               <button class="btn btn-quiet" data-action="skip" data-id="${h.id}" data-date="${todayKey()}" ${left ? '' : 'disabled style="opacity:.45"'}>Use skip (${left} left)</button>`;
+        return tiles([[streak, 'Day streak'], [best, 'Best'], [days30 ? Math.round(done30 / days30 * 100) + '%' : '—', 'Last 30 days']]) +
+            `<div class="p-status">${status} · ${left ? '1 skip left this week' : 'skip used this week'}</div>
+            <div class="actions">${actions}</div>` +
+            secT('History', 'tap a day to edit') +
+            `<div class="panel">${heatmap(h, k => {
+                const s = buildDay(h, k);
+                return s === 'done' ? ['done', true, 'done'] : s === 'skip' ? ['rest', true, 'skipped'] : s === 'miss' ? ['', true, 'missed']
+                     : s === 'fut' ? ['fut', false, ''] : ['off', false, 'before tracking'];
+            })}${legend([['', 'background:var(--accent)', 'Done'], ['rest', '', 'Skip (streak kept)'], ['', 'background:var(--faint)', 'Missed']])}</div>` +
+            weekdayBars(h, k => { const s = buildDay(h, k); return s === 'done' ? true : s === 'miss' && k !== todayKey() ? false : null; }, false);
+    }
+
+    function discPage(h) {
+        const streak = discStreak(h), best = Math.max(bestDiscStreak(h), streak), adh = adherence(h, 30);
+        const today = (h.outcomes || {})[todayKey()];
+        const status = today === 'win' ? '<b>✓ On plan today</b>' : today === 'loss' ? '<b>✕ Broke the rules today</b>'
+            : today === 'rest' ? '<b>No session today</b>' : isRestDay(h) ? (h.preset === 'trading' ? 'Market closed — rest day' : 'Rest day') : 'Not logged yet today';
+        const { wins, losses } = discCounts(h);
+        const notes = Object.entries(h.lossNotes || {}).filter(([k]) => (h.outcomes || {})[k] === 'loss').sort((a, b) => b[0] < a[0] ? -1 : 1).slice(0, 20);
+        return tiles([[streak, 'On-plan streak'], [adh != null ? adh + '%' : '—', 'Adherence · 30d'], [best, 'Best']]) +
+            `<div class="p-status">${status} · ${wins} on plan, ${losses} broken all-time</div>
+            <div class="actions">
+                <button class="btn btn-good ${today === 'win' ? 'on' : ''}" data-action="disc-win" data-id="${h.id}">✓ Followed</button>
+                <button class="btn btn-danger ${today === 'loss' ? 'on' : ''}" data-action="disc-loss" data-id="${h.id}">✕ Broke</button>
+                <button class="btn btn-quiet ${today === 'rest' ? 'on' : ''}" data-action="disc-rest" data-id="${h.id}" style="flex:0 0 auto">No session</button>
+            </div>` +
+            secT('History', 'tap a day to edit') +
+            `<div class="panel">${heatmap(h, (k, d) => {
+                const s = discDay(h, k);
+                if (s === 'fut') return ['fut', false, ''];
+                if (s === 'off' && k < createdKey(h)) return ['off', false, 'before tracking'];
+                if (s === 'off') return ['off', true, isScheduled(h, d) ? 'not logged' : 'weekend'];
+                return [s === 'open' ? '' : s, true, { win: 'on plan', loss: 'broke rules', rest: 'no session', gap: 'not logged', open: 'not logged yet' }[s]];
+            })}${legend([['', 'background:var(--good)', 'On plan'], ['', 'background:var(--danger)', 'Broke'], ['rest', '', 'No session'], ['gap', '', 'Not logged']])}
+            <div class="insight">Unlogged weekdays count as a break once they're two days old — log a "No session" for days you didn't trade.</div></div>` +
+            weekdayBars(h, k => { const s = discDay(h, k); return s === 'win' ? true : (s === 'loss' || s === 'gap') ? false : null; }, !!h.reminderWeekdays) +
+            (notes.length ? secT('What pulled you in') + `<div class="panel" style="padding:4px 14px">${notes.map(([k, n]) =>
+                `<div class="note-row"><span class="d">${keyToDate(k).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span><span class="t">${esc(n)}</span></div>`).join('')}</div>` : '');
+    }
+
+    function quitPage(h) {
+        const ms = quitMs(h), best = Math.max(bestMs(h), ms), { clean, total } = cleanStats(h, 30);
+        const rk = relapseKeys(h), from = createdKey(h);
+        const sav = [];
+        if (h.costPerDay) sav.push(fmtMoney(h.costPerDay * ms / DAY) + ' saved');
+        if (h.hoursPerDay) sav.push(fmtHours(h.hoursPerDay * ms / DAY) + ' reclaimed');
+        const crav = (h.cravings || []).slice().reverse();
+        const buckets = [['Morning', 5, 12], ['Afternoon', 12, 17], ['Evening', 17, 22], ['Night', 22, 29]];
+        const bc = buckets.map(([n, a, b]) => [n, crav.filter(c => { const hr = new Date(c.date).getHours(); const x = hr < 5 ? hr + 24 : hr; return x >= a && x < b; }).length]);
+        const maxB = Math.max(1, ...bc.map(x => x[1]));
+        const triggers = [...crav.filter(c => c.trigger).map(c => [c.date, c.trigger, 'beaten']),
+                          ...(h.relapses || []).filter(r => r.note).map(r => [r.date, r.note, 'slip'])]
+            .sort((a, b) => a[0] < b[0] ? 1 : -1).slice(0, 12);
+        return tiles([[`<span data-live="${h.id}:qdays">${Math.floor(ms / DAY)}d</span>`, 'Current'], [Math.floor(best / DAY) + 'd', 'Best'], [total ? Math.round(clean / total * 100) + '%' : '—', 'Clean · 30d']]) +
+            `<div class="p-status"><b data-live="${h.id}:qclock">${fmtQuitClock(ms)}</b> since ${fmtDayTime(h.startDate)}${sav.length ? ' · ' + sav.join(' · ') : ''}</div>
+            ${h.plan ? `<div class="panel plan" style="margin-bottom:12px"><span class="lbl">Your if-then plan</span>${esc(h.plan)}</div>` : ''}
+            <div class="actions">
+                <button class="btn btn-good" data-action="craving" data-id="${h.id}">Hold the line</button>
+                <button class="btn btn-danger" data-action="relapse" data-id="${h.id}" style="flex:0 0 auto;padding:12px 18px">Log a slip</button>
+            </div>` +
+            secT('History') +
+            `<div class="panel">${heatmap(h, k => k > todayKey() ? ['fut', false, ''] : k < from ? ['off', false, 'before tracking'] : rk.has(k) ? ['loss', false, 'slip'] : ['clean', false, 'clean'])}
+             ${legend([['', 'background:color-mix(in srgb,var(--accent) 70%,transparent)', 'Clean'], ['', 'background:var(--danger)', 'Slip']])}</div>` +
+            (crav.length ? secT('When urges hit', `${crav.length} beaten`) + `<div class="panel"><div class="wkbars" style="height:84px">${bc.map(([n, c]) =>
+                `<div><span class="pc">${c}</span><div class="b" style="height:${Math.max(3, c / maxB * 48).toFixed(0)}px"></div>${n}</div>`).join('')}</div></div>` : '') +
+            (triggers.length ? secT('Triggers') + `<div class="panel" style="padding:4px 14px">${triggers.map(([d, t, kind]) =>
+                `<div class="note-row"><span class="d">${new Date(d).toLocaleDateString([], { month: 'short', day: 'numeric' })}${kind === 'slip' ? ' · slip' : ''}</span><span class="t">${esc(t)}</span></div>`).join('')}</div>` : '') +
+            ((h.relapses || []).length ? secT('Slips') + `<div class="panel" style="padding:4px 14px">${h.relapses.slice().reverse().slice(0, 12).map(r =>
+                `<div class="note-row"><span class="d">${new Date(r.date).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span><span class="t">${esc(r.note || '—')}</span>
+                 <button class="x-btn" data-action="relapse-del" data-id="${h.id}" data-date="${esc(r.date)}" aria-label="Delete this slip">✕</button></div>`).join('')}</div>` : '');
+    }
+
+    function fastPage(h) {
+        const { count, longest, hitRate } = fastStats(h), goal = h.goalHours || 16;
+        let top;
+        if (h.fastStart) {
+            top = fastCard(h, true);
+        } else {
+            top = `<div class="panel" style="--accent:${h.color || '#a371f7'}">
+                <div class="p-status" style="margin:0">Pick a goal, then start the clock at your last bite.</div>
+                <div class="goalchips">${FAST_GOALS.map(g => `<button class="chip ${goal === g.h ? 'sel' : ''}" data-action="fast-goal" data-id="${h.id}" data-hours="${g.h}">${g.h}h</button>`).join('')}</div>
+                <div class="stageline">${esc((FAST_GOALS.find(g => g.h === goal) || FAST_GOALS[0]).desc)}</div>
+                <div class="actions" style="margin-top:12px"><button class="btn btn-good" data-action="fast-start" data-id="${h.id}">▶ Start ${goal}h fast</button></div></div>`;
+        }
+        const log = (h.fasts || []).slice(-14);
+        let chart = '';
+        if (log.length) {
+            const maxH = Math.max(goal, ...log.map(f => f.hours || 0)) * 1.12;
+            const W = 320, H = 120, bw = Math.min(18, (W - 20) / log.length - 4);
+            const x = i => 10 + i * ((W - 20) / log.length) + ((W - 20) / log.length - bw) / 2;
+            const y = v => H - 18 - (v / maxH) * (H - 30);
+            const bars = log.map((f, i) => `<rect x="${x(i).toFixed(1)}" y="${y(f.hours || 0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H - 18 - y(f.hours || 0)).toFixed(1)}" rx="3"
+                fill="${f.hit ? 'var(--accent)' : 'var(--muted)'}" opacity="${f.hit ? 1 : .55}"><title>${(f.hours || 0).toFixed(1)}h of ${f.goal}h</title></rect>`).join('');
+            const gy = y(goal).toFixed(1);
+            chart = secT(`Last ${log.length} fast${log.length === 1 ? '' : 's'}`) + `<div class="panel"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Fast lengths">
+                <line x1="6" x2="${W - 6}" y1="${gy}" y2="${gy}" stroke="var(--text)" stroke-dasharray="4 4" opacity=".5"/>
+                <text x="${W - 6}" y="${(+gy - 5).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)">goal ${goal}h</text>
+                ${bars}
+                <text x="10" y="${H - 3}" font-size="11" fill="var(--muted)">${new Date(log[0].start).toLocaleDateString([], { month: 'short', day: 'numeric' })}</text>
+                <text x="${W - 10}" y="${H - 3}" font-size="11" fill="var(--muted)" text-anchor="end">${new Date(log[log.length - 1].start).toLocaleDateString([], { month: 'short', day: 'numeric' })}</text>
+                </svg>${legend([['', 'background:var(--accent)', 'Goal hit'], ['', 'background:var(--muted);opacity:.55', 'Short of goal']])}</div>`;
+        }
+        const list = (h.fasts || []).slice().reverse().slice(0, 20);
+        return tiles([[count, 'Fasts'], [longest ? longest.toFixed(longest >= 10 ? 0 : 1) + 'h' : '—', 'Longest'], [count ? hitRate + '%' : '—', 'Goals hit']]) +
+            top + chart +
+            (list.length ? secT('Fast log') + `<div class="panel" style="padding:4px 14px">${list.map(f =>
+                `<div class="note-row"><span class="d">${f.hit ? '✓' : '◻'} ${new Date(f.start).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span><span class="t">${(f.hours || 0).toFixed(1)}h of ${f.goal}h</span>
+                 <button class="x-btn" data-action="fast-del" data-id="${h.id}" data-start="${esc(f.start)}" aria-label="Delete this fast">✕</button></div>`).join('')}</div>` : '');
+    }
+
+    /* ----- Day editor: backfill or correct any past day from the heatmap ----- */
+    function openDay(id, k) {
+        const h = state.habits.find(x => x.id === id); if (!h || k > todayKey()) return;
+        const label = keyToDate(k).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+        let opts = '';
+        if (h.type === 'build') {
+            const s = buildDay(h, k), left = skipsLeft(h, keyToDate(k));
+            opts = `<button class="save-btn" data-action="day-set" data-id="${id}" data-date="${k}" data-val="done">${s === 'done' ? '✓ Done (current)' : '✓ Mark done'}</button>
+                <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="day-set" data-id="${id}" data-date="${k}" data-val="skip" ${s !== 'skip' && !left ? 'disabled' : ''}>${s === 'skip' ? 'Skipped (current)' : left ? 'Use that week\'s skip' : 'Skip already used that week'}</button>
+                <button class="text-btn" data-action="day-set" data-id="${id}" data-date="${k}" data-val="clear">Clear this day</button>`;
+        } else {
+            const s = (h.outcomes || {})[k];
+            const cur = v => s === v ? ' (current)' : '';
+            opts = `<button class="save-btn" style="background:var(--good);color:#06210f" data-action="day-set" data-id="${id}" data-date="${k}" data-val="win">✓ Followed rules${cur('win')}</button>
+                <label class="f">Broke rules? What happened (optional)</label>
+                <input class="f" id="dayNote" value="${esc((h.lossNotes || {})[k] || '')}" placeholder="Chased the 1m, moved my stop, FOMO entry...">
+                <button class="save-btn" style="background:linear-gradient(135deg,#ff4d4d,#ff7a7a)" data-action="day-set" data-id="${id}" data-date="${k}" data-val="loss">✕ Broke rules${cur('loss')}</button>
+                <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="day-set" data-id="${id}" data-date="${k}" data-val="rest">No session${cur('rest')}</button>
+                <button class="text-btn" data-action="day-set" data-id="${id}" data-date="${k}" data-val="clear">Clear this day</button>`;
+        }
+        openSheet(`<div class="sheet-grab"></div><h2>${esc(label)}</h2><p class="sub">${esc(h.name)}</p>${opts}
+            <button class="text-btn" data-action="close">Cancel</button>`);
+    }
+    function setDay(id, k, val) {
+        const h = state.habits.find(x => x.id === id); if (!h || k > todayKey()) return;
+        if (h.type === 'build') {
+            const wasDone = (h.checkIns || []).includes(k);
+            h.checkIns = (h.checkIns || []).filter(x => x !== k);
+            h.skips = (h.skips || []).filter(x => x !== k);
+            if (val === 'done') h.checkIns.push(k);
+            if (val === 'skip') {
+                if (skipsLeft(h, keyToDate(k)) < 1) { if (wasDone) h.checkIns.push(k); toast('That week\'s skip is already used.'); return; }
+                h.skips.push(k);
+            }
+        } else {
+            h.outcomes = h.outcomes || {};
+            if (val === 'clear') { delete h.outcomes[k]; if (h.lossNotes) delete h.lossNotes[k]; }
+            else {
+                h.outcomes[k] = val;
+                const note = ((document.getElementById('dayNote') || {}).value || '').trim();
+                if (val === 'loss' && note) { h.lossNotes = h.lossNotes || {}; h.lossNotes[k] = note; }
+                else if (h.lossNotes && val !== 'loss') delete h.lossNotes[k];
+            }
+        }
+        save(); closeSheet(); render(); haptic(ImpactStyle.Light);
+        toast(val === 'clear' ? 'Day cleared.' : 'Day updated.');
+    }
+    function skipDay(id, k) { setDay(id, k, 'skip'); }
+
+    /* ----- Deleting log entries ----- */
+    function askDelete(title, sub, action, id, extraAttr) {
+        openSheet(`<div class="sheet-grab"></div><h2>${esc(title)}</h2><p class="sub">${esc(sub)}</p>
+            <button class="save-btn" style="background:linear-gradient(135deg,#ff4d4d,#ff7a7a)" data-action="${action}" data-id="${id}" ${extraAttr}>Delete</button>
+            <button class="text-btn" data-action="close">Cancel</button>`);
+    }
+    function deleteRelapse(id, date) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        h.relapses = (h.relapses || []).filter(r => r.date !== date);
+        // the clock runs from the latest remaining slip, or from when tracking began
+        const latest = [h.createdDate, ...h.relapses.map(r => r.date)].map(d => new Date(d).getTime()).reduce((a, b) => Math.max(a, b), 0);
+        h.startDate = new Date(latest).toISOString();
+        h._lastMilestone = achievedQuit(quitMs(h)).length;
+        save(); closeSheet(); render(); toast('Slip removed.'); syncScheduledReminders();
+    }
+    function deleteFast(id, start) {
+        const h = state.habits.find(x => x.id === id); if (!h) return;
+        h.fasts = (h.fasts || []).filter(f => f.start !== start);
+        save(); closeSheet(); render(); toast('Fast removed.');
+    }
+
     // Read the elapsed time a timeline label stands for, from its lower bound:
     // '20 Min', '12–24 Hours', '3–7 Days', 'Day 1', '2–4 Weeks', '3 Months+', '1 Year'.
     function timelineMs(label) {
@@ -1621,10 +2032,6 @@
         if (!m) return Infinity;
         const unit = { min: MIN, hour: HOUR, day: DAY, week: 7 * DAY, month: 30 * DAY, year: 365 * DAY }[m[2]];
         return +m[1] * unit;
-    }
-    function statsBlock(pairs) {
-        return `<div class="ministats" style="margin:6px 0 4px">` +
-            pairs.map(([s, b]) => `<div class="m"><b>${b}</b><span>${esc(s)}</span></div>`).join('') + `</div>`;
     }
     function milestoneList(h) {
         if (h.type === 'build' || h.type === 'disc') {
@@ -1735,7 +2142,7 @@
     }
     function confirmImport() {
         if (!pendingImport) return;
-        state = pendingImport; pendingImport = null;
+        state = pendingImport; pendingImport = null; migrate();
         save(); closeSheet(); render(); toast('Data restored.'); syncScheduledReminders();
     }
 
@@ -1963,7 +2370,20 @@
             case 'add': openForm(); break;
             case 'quick-add': openForm(); selectPreset(el.dataset.preset); break;
             case 'settings': openSettings(); break;
-            case 'details': openDetails(id); break;
+            case 'details': case 'open': openPage(id); break;
+            case 'page-back': closePage(); break;
+            case 'hold': if (e.detail === 0) checkIn(id); break;   // keyboard / assistive tech: no hold needed
+            case 'disc-rest': discRest(id); break;
+            case 'day': openDay(id, el.dataset.date); break;
+            case 'day-set': setDay(id, el.dataset.date, el.dataset.val); break;
+            case 'skip': skipDay(id, el.dataset.date); break;
+            case 'unskip': setDay(id, el.dataset.date, 'clear'); break;
+            case 'relapse-del': askDelete('Delete this slip?', 'The clock will run from your previous slip (or from when you started tracking).', 'confirm-relapse-del', id, `data-date="${esc(el.dataset.date)}"`); break;
+            case 'confirm-relapse-del': deleteRelapse(id, el.dataset.date); break;
+            case 'fast-del': askDelete('Delete this fast?', 'It will be removed from your log and stats.', 'confirm-fast-del', id, `data-start="${esc(el.dataset.start)}"`); break;
+            case 'confirm-fast-del': deleteFast(id, el.dataset.start); break;
+            case 'set-color': syncDraftFromInputs(); draft.color = el.dataset.color; renderForm(); break;
+            case 'breath': setBreath(el.dataset.breath); break;
             case 'edit': openForm(state.habits.find(x => x.id === id)); break;
             case 'delete': deleteHabit(id); break;
             case 'relapse': relapse(id); break;
@@ -2010,9 +2430,37 @@
     /* ============================================================
        INIT
        ============================================================ */
+    /* One-time data upgrades for the redesign (idempotent):
+       - Rules trackers start counting unlogged weekdays as gaps from today on.
+       - Pure-red accents (old Gym / No Porn defaults) move to the palette. */
+    function migrate() {
+        let changed = false;
+        for (const h of state.habits) {
+            if (h.type === 'disc' && !h.gapsFrom) { h.gapsFrom = todayKey(); changed = true; }
+            if (h.type === 'build' && !h.skips) { h.skips = []; changed = true; }
+            const swap = { '#ff5252': '#ff9f43', '#ef5350': '#f778ba' }[String(h.color || '').toLowerCase()];
+            if (swap) { h.color = swap; changed = true; }
+        }
+        if (changed) save();
+    }
+
+    /* Hold-to-check: press and hold ~0.6s on a build row's ring. A short tap does
+       nothing (no accidental check-ins); scrolling away cancels. */
+    let holdTimer = null, holdEl = null;
+    function cancelHold() { clearTimeout(holdTimer); holdTimer = null; if (holdEl) holdEl.classList.remove('holding'); holdEl = null; }
+    document.addEventListener('pointerdown', e => {
+        const el = e.target.closest('[data-hold]'); if (!el) return;
+        cancelHold(); holdEl = el; el.classList.add('holding'); haptic(ImpactStyle.Light);
+        holdTimer = setTimeout(() => { const id = el.dataset.id; cancelHold(); checkIn(id); }, 600);
+    });
+    ['pointerup', 'pointercancel'].forEach(t => document.addEventListener(t, cancelHold));
+    document.addEventListener('contextmenu', e => { if (e.target.closest('[data-hold]')) e.preventDefault(); });
+
+    migrate();
     render();   // instant first paint from the localStorage mirror
     (async () => {
         await hydrateFromNative();   // then reconcile with the durable native store
+        migrate();
         tick();
         setInterval(tick, 1000);
         syncScheduledReminders();    // refresh OS-scheduled alerts on every launch
