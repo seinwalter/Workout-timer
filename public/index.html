@@ -2,27 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fight Club">
+    <meta name="theme-color" content="#000000">
+    <meta name="format-detection" content="telephone=no">
     <title>Fight Club - Workout Timer</title>
     <style>
+        :root {
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+            --accent: #ff3b30;
+            --accent-light: #ff6b6b;
+            --accent-glow: rgba(255, 59, 48, 0.35);
+            --success: #34c759;
+            --bg-primary: #000000;
+            --bg-card: rgba(28, 28, 30, 0.85);
+            --bg-inset: rgba(0, 0, 0, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(235, 235, 245, 0.6);
+            --text-tertiary: rgba(235, 235, 245, 0.3);
+            --separator: rgba(84, 84, 88, 0.5);
+            --hairline: rgba(255, 255, 255, 0.08);
+            --blur: saturate(180%) blur(20px);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            overscroll-behavior-y: none;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
-            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding: 10px;
-            position: relative;
+            min-height: -webkit-fill-available;
+            padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 24px) calc(var(--safe-left) + 16px);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+            letter-spacing: -0.01em;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at top right, rgba(255, 59, 48, 0.07) 0%, transparent 45%),
+                radial-gradient(ellipse at bottom left, rgba(255, 107, 107, 0.04) 0%, transparent 45%),
+                #000;
+            z-index: -1;
+            pointer-events: none;
         }
 
         .container {
@@ -32,103 +76,128 @@
 
         .header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #333;
+            margin-bottom: 18px;
+            padding: 6px 0 0 0;
             position: relative;
         }
 
         .settings-btn {
             position: absolute;
-            right: 0;
-            top: 0;
-            background: transparent;
+            right: -4px;
+            top: 6px;
+            background: rgba(44, 44, 46, 0.7);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
             border: none;
-            color: #999;
+            color: var(--text-secondary);
             cursor: pointer;
-            font-size: 1.8rem;
-            padding: 10px 12px;
-            min-width: 48px;
-            min-height: 48px;
-            transition: all 0.2s ease;
+            font-size: 1.25rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            transition: transform 0.15s ease, background 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .settings-btn:hover {
-            color: #ff6b6b;
-            transform: rotate(30deg);
+        .settings-btn:active {
+            transform: scale(0.9);
+            background: rgba(60, 60, 62, 0.9);
         }
 
         .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            font-size: 2.1rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 60%, #ff8787 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            letter-spacing: -0.5px;
-        }
-
-        .header p {
-            font-size: 0.9rem;
-            color: #999;
+            letter-spacing: -1px;
+            line-height: 1.1;
         }
 
         .progress-bar {
-            background: #1a1a1a;
-            border-radius: 8px;
-            height: 6px;
-            margin: 12px 0 8px 0;
+            background: rgba(60, 60, 62, 0.5);
+            border-radius: 10px;
+            height: 4px;
+            margin: 12px auto 0 auto;
+            max-width: 180px;
             overflow: hidden;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #ff6b6b 0%, #ff8787 100%);
-            border-radius: 8px;
-            transition: width 0.5s ease;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+            border-radius: 10px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .program-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-bottom: 8px;
+            padding: 4px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            border: 0.5px solid var(--hairline);
+        }
+
+        .program-btn {
+            padding: 9px 4px;
+            background: transparent;
+            border: none;
+            border-radius: 9px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: -0.1px;
+            min-height: 38px;
+        }
+
+        .program-btn:active {
+            transform: scale(0.95);
+        }
+
+        .program-btn.active {
+            background: rgba(58, 58, 60, 0.9);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .day-selector {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 4px;
             margin-bottom: 20px;
+            padding: 5px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 14px;
+            border: 0.5px solid var(--hairline);
         }
 
         .day-btn {
-            padding: 14px 6px;
-            background: #1a1a1a;
-            border: 1px solid #333;
+            padding: 12px 2px;
+            background: transparent;
+            border: none;
             border-radius: 10px;
-            color: #999;
+            color: var(--text-secondary);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.15s ease, background 0.2s ease, color 0.2s ease;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.3px;
             position: relative;
-            overflow: hidden;
-            min-height: 48px;
+            min-height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .day-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
         }
 
         .day-btn span {
@@ -137,252 +206,290 @@
         }
 
         .day-btn:active {
-            transform: scale(0.95);
-        }
-
-        .day-btn:hover:not(.active) {
-            border-color: #555;
-            transform: translateY(-2px);
+            transform: scale(0.92);
         }
 
         .day-btn.active {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
             color: #fff;
-            border-color: #ff6b6b;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
-            transform: translateY(-2px);
+            font-weight: 700;
+            box-shadow: 0 4px 12px var(--accent-glow);
         }
 
         .day-btn.completed {
-            background: #1a1a1a;
-            color: #4CAF50;
-            border-color: #4CAF50;
+            color: var(--success);
+        }
+
+        .day-btn.completed.active {
+            color: #fff;
         }
 
         .day-btn.completed::after {
-            content: '✓';
+            content: '';
             position: absolute;
-            top: 2px;
-            right: 4px;
-            font-size: 0.7rem;
-            color: #4CAF50;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .day-btn.completed.active::after {
+            background: #fff;
         }
 
         .workout-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #fff 0%, #ccc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.7rem;
+            font-weight: 800;
+            margin-bottom: 3px;
+            color: var(--text-primary);
+            letter-spacing: -0.7px;
+            line-height: 1.1;
         }
 
         .workout-meta {
             font-size: 0.85rem;
-            color: #999;
-            margin-bottom: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         .timer-section {
-            background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid #333;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 22px;
+            padding: 18px 14px;
+            margin-bottom: 16px;
+            border: 0.5px solid var(--hairline);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
         }
 
         .phase-indicator {
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             margin-bottom: 12px;
-            color: #999;
-            font-weight: 600;
-            letter-spacing: 1px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .phase-indicator #currentPhase {
+            color: var(--accent-light);
         }
 
         .current-exercise-display {
             text-align: center;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: linear-gradient(135deg, #2a1a1a 0%, #221a1a 100%);
-            border-radius: 10px;
-            border: 2px solid #ff6b6b;
-            box-shadow: 0 4px 16px rgba(255, 107, 107, 0.2);
-            animation: slideIn 0.5s ease;
+            margin-bottom: 16px;
+            padding: 16px 14px;
+            background: linear-gradient(165deg, rgba(255, 59, 48, 0.12) 0%, rgba(255, 107, 107, 0.05) 100%);
+            border-radius: 16px;
+            border: 0.5px solid rgba(255, 59, 48, 0.25);
+            animation: slideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .exercise-progress {
-            font-size: 0.75rem;
-            color: #666;
+            display: inline-block;
+            font-size: 0.62rem;
+            color: var(--accent-light);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 10px;
+            letter-spacing: 1.6px;
+            margin-bottom: 8px;
             font-weight: 700;
+            padding: 4px 10px;
+            background: rgba(255, 59, 48, 0.15);
+            border-radius: 100px;
         }
 
         .current-exercise-name {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.55rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+            line-height: 1.15;
         }
 
         .current-exercise-details {
-            font-size: 1rem;
-            color: #ccc;
-            line-height: 1.6;
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            font-weight: 500;
         }
 
         .next-up-display {
-            text-align: center;
-            margin-top: 15px;
-            padding: 12px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
+            margin-top: 12px;
+            padding: 9px 12px;
+            background: var(--bg-inset);
+            border-radius: 11px;
+            border: 0.5px solid var(--hairline);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         .next-up-label {
-            font-size: 0.7rem;
-            color: #666;
+            font-size: 0.62rem;
+            color: var(--text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin-bottom: 5px;
+            letter-spacing: 1.4px;
             font-weight: 700;
         }
 
         .next-up-name {
-            font-size: 0.95rem;
-            color: #999;
+            font-size: 0.86rem;
+            color: var(--text-secondary);
             font-weight: 600;
         }
 
         .exercise-tracker {
-            margin-top: 20px;
+            margin-top: 14px;
             text-align: center;
         }
 
         .tracker-dots {
             display: flex;
             justify-content: center;
-            gap: 8px;
+            align-items: center;
+            gap: 9px;
             flex-wrap: wrap;
-            margin-top: 10px;
+            padding: 9px 14px;
+            background: var(--bg-inset);
+            border-radius: 100px;
+            width: fit-content;
+            margin: 0 auto;
         }
 
         .tracker-dot {
-            width: 14px;
-            height: 14px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
-            background: #333;
-            border: 2px solid #444;
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.16);
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s ease;
             cursor: pointer;
-            min-width: 14px;
-            min-height: 14px;
+            position: relative;
+        }
+
+        .tracker-dot::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
         }
 
         .tracker-dot.active {
-            background: #ff6b6b;
-            border-color: #ff6b6b;
-            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-            transform: scale(1.3);
+            background: var(--accent-light);
+            box-shadow: 0 0 10px var(--accent-glow);
+            transform: scale(1.45);
         }
 
         .tracker-dot.completed {
-            background: #4CAF50;
-            border-color: #4CAF50;
+            background: var(--success);
+        }
+
+        .tracker-dot.completed.active {
+            background: var(--accent-light);
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: translateY(-6px) scale(0.98);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
 
         .collapsible-section {
-            margin-top: 20px;
+            margin-top: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .collapse-btn {
             width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-            border: 1px solid #444;
-            border-radius: 8px;
-            color: #999;
+            padding: 14px 16px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 0.5px solid var(--hairline);
+            border-radius: 14px;
+            color: var(--text-primary);
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            transition: all 0.2s ease;
+            transition: transform 0.12s ease, background 0.2s ease;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            letter-spacing: -0.2px;
         }
 
-        .collapse-btn:hover {
-            border-color: #666;
-            color: #fff;
+        .collapse-btn:active {
+            transform: scale(0.98);
+            background: rgba(44, 44, 46, 0.95);
+        }
+
+        .collapse-btn span:last-child {
+            color: var(--text-tertiary);
+            font-size: 0.7rem;
         }
 
         .collapse-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .collapse-content.expanded {
-            max-height: 1000px;
+            max-height: 2000px;
         }
 
         .timer-display-container {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 20px 0;
-            position: relative;
+            margin: 10px 0 16px 0;
         }
 
         .circular-timer {
             position: relative;
-            width: 220px;
-            height: 220px;
+            width: 240px;
+            height: 240px;
         }
 
         .circular-timer svg {
             transform: rotate(-90deg);
-            filter: drop-shadow(0 0 8px currentColor);
+            width: 100%;
+            height: 100%;
         }
 
         .circular-timer-bg {
             fill: none;
-            stroke: #2a2a2a;
-            stroke-width: 8;
+            stroke: rgba(60, 60, 62, 0.5);
+            stroke-width: 7;
         }
 
         .circular-timer-progress {
             fill: none;
-            stroke-width: 8;
+            stroke-width: 7;
             stroke-linecap: round;
-            transition: stroke-dashoffset 0.5s linear;
+            transition: stroke-dashoffset 0.95s linear;
+            filter: drop-shadow(0 0 8px currentColor);
         }
 
         .circular-timer-progress.work {
-            stroke: #ff6b6b;
+            stroke: var(--accent);
         }
 
         .circular-timer-progress.rest {
-            stroke: #4CAF50;
+            stroke: var(--success);
         }
 
         .timer-display {
@@ -390,71 +497,57 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 2.5rem;
-            font-weight: 300;
+            font-size: 3.3rem;
+            font-weight: 200;
             font-variant-numeric: tabular-nums;
             text-align: center;
+            letter-spacing: -2px;
+            line-height: 1;
         }
 
         .timer-display.work {
-            color: #ff6b6b;
-            text-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            color: var(--accent-light);
+            text-shadow: 0 0 28px rgba(255, 59, 48, 0.45);
         }
 
         .timer-display.rest {
-            color: #4CAF50;
-            text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            color: var(--success);
+            text-shadow: 0 0 28px rgba(52, 199, 89, 0.45);
         }
 
         .timer-display-label {
-            font-size: 0.7rem;
-            color: #999;
+            font-size: 0.62rem;
+            color: var(--text-tertiary);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 4px;
+            letter-spacing: 3px;
+            margin-top: 9px;
+            font-weight: 700;
         }
 
         .timer-controls {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 15px;
+            margin-top: 12px;
         }
 
         .timer-btn {
-            padding: 16px 12px;
-            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-            border: 1px solid #444;
-            border-radius: 10px;
-            color: #fff;
+            padding: 14px 10px;
+            background: rgba(44, 44, 46, 0.85);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 0.5px solid rgba(255, 255, 255, 0.06);
+            border-radius: 13px;
+            color: var(--text-primary);
             cursor: pointer;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-            min-height: 52px;
+            transition: transform 0.12s ease, background 0.2s ease;
+            min-height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .timer-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 107, 107, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease, height 0.3s ease;
-        }
-
-        .timer-btn:hover::before {
-            width: 300px;
-            height: 300px;
+            letter-spacing: -0.2px;
         }
 
         .timer-btn span {
@@ -463,16 +556,13 @@
         }
 
         .timer-btn:active {
-            transform: scale(0.95);
-        }
-
-        .timer-btn:hover {
-            border-color: #ff6b6b;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);
+            transform: scale(0.94);
+            background: rgba(58, 58, 60, 0.95);
         }
 
         .timer-btn.full {
             grid-column: 1 / -1;
+            width: 100%;
         }
 
         .timer-btn.half {
@@ -480,210 +570,213 @@
         }
 
         .timer-btn.primary {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
-            border-color: #ff6b6b;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border: none;
+            box-shadow: 0 6px 16px var(--accent-glow);
+            font-weight: 700;
         }
 
-        .timer-btn.primary:hover {
-            box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+        .timer-btn.primary:active {
+            box-shadow: 0 3px 8px var(--accent-glow);
         }
 
         .section-title {
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #666;
-            margin: 25px 0 12px 0;
+            letter-spacing: 1.8px;
+            color: var(--text-tertiary);
+            margin: 18px 0 10px 0;
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 3px;
-            height: 12px;
-            background: #ff6b6b;
-            border-radius: 2px;
         }
 
         .exercise-list {
             display: grid;
-            gap: 10px;
+            gap: 0;
+            padding: 6px;
+            background: var(--bg-card);
+            border-radius: 14px;
+            border: 0.5px solid var(--hairline);
         }
 
         .exercise-item {
-            background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
-            border: 1px solid #333;
+            background: transparent;
+            border: none;
             border-radius: 10px;
-            padding: 16px;
-            transition: all 0.3s ease;
+            padding: 12px 12px;
+            transition: background 0.2s ease;
             position: relative;
-            overflow: hidden;
         }
 
-        .exercise-item::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background: #ff6b6b;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        .exercise-item + .exercise-item {
+            border-top: 0.5px solid var(--hairline);
         }
 
         .exercise-item.active {
-            border-color: #ff6b6b;
-            background: linear-gradient(135deg, #2a1a1a 0%, #221a1a 100%);
-            box-shadow: 0 4px 16px rgba(255, 107, 107, 0.2);
-            transform: translateX(4px);
-        }
-
-        .exercise-item.active::before {
-            opacity: 1;
+            background: rgba(255, 59, 48, 0.12);
+            border-radius: 10px;
         }
 
         .exercise-item.completed {
-            opacity: 0.5;
+            opacity: 0.4;
         }
 
         .exercise-item.completed .exercise-name {
             text-decoration: line-through;
         }
 
-        .exercise-item:hover:not(.completed) {
-            transform: translateX(2px);
-            border-color: #555;
-        }
-
         .exercise-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 12px;
         }
 
         .exercise-name {
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            margin-bottom: 4px;
-            color: #fff;
+            margin-bottom: 2px;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
         }
 
         .exercise-details {
-            font-size: 0.85rem;
-            color: #999;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.35;
         }
 
         .exercise-checkbox {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            min-height: 26px;
             cursor: pointer;
             flex-shrink: 0;
-            margin-top: 2px;
-            accent-color: #4CAF50;
-            min-width: 28px;
-            min-height: 28px;
+            -webkit-appearance: none;
+            appearance: none;
+            border-radius: 50%;
+            border: 1.5px solid var(--separator);
+            background: transparent;
+            position: relative;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+        }
+
+        .exercise-checkbox:checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .exercise-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%) rotate(45deg);
+            width: 6px;
+            height: 11px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+        }
+
+        .exercise-checkbox:active {
+            transform: scale(0.9);
         }
 
         .stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid #333;
+            gap: 8px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 0.5px solid var(--separator);
         }
 
         .stat {
             text-align: center;
-            padding: 15px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #222 100%);
-            border-radius: 10px;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
-        }
-
-        .stat:hover {
-            border-color: #555;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            padding: 15px 8px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 15px;
+            border: 0.5px solid var(--hairline);
         }
 
         .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+            font-size: 1.85rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -1px;
+            line-height: 1;
         }
 
         .stat-label {
-            font-size: 0.7rem;
-            color: #666;
+            font-size: 0.62rem;
+            color: var(--text-tertiary);
             margin-top: 6px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
+            letter-spacing: 1.2px;
+            font-weight: 700;
         }
 
         .rest-day {
             text-align: center;
-            padding: 50px 20px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
-            border-radius: 12px;
-            border: 1px solid #333;
+            padding: 38px 18px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 22px;
+            border: 0.5px solid var(--hairline);
         }
 
         .rest-day h2 {
-            font-size: 2rem;
-            margin-bottom: 15px;
-            color: #4CAF50;
-            text-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+            font-size: 1.8rem;
+            margin-bottom: 12px;
+            color: var(--success);
+            font-weight: 800;
+            letter-spacing: -0.5px;
         }
 
         .warmup-list {
-            font-size: 0.9rem;
-            color: #999;
-            line-height: 1.8;
-            padding: 15px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
+            font-size: 0.86rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding: 13px 15px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            border: 0.5px solid var(--hairline);
         }
 
         .warmup-list p {
-            margin: 8px 0;
-            padding-left: 20px;
+            margin: 7px 0;
+            padding-left: 16px;
             position: relative;
         }
 
         .warmup-list p::before {
-            content: '•';
+            content: '';
             position: absolute;
-            left: 0;
-            color: #ff6b6b;
-            font-size: 1.2rem;
+            left: 2px;
+            top: 0.55em;
+            width: 5px;
+            height: 5px;
+            background: var(--accent-light);
+            border-radius: 50%;
         }
 
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(5px);
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             z-index: 1000;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
-            animation: fadeIn 0.3s ease;
+            animation: fadeIn 0.25s ease;
         }
 
         .modal.active {
@@ -691,117 +784,147 @@
         }
 
         .modal-content {
-            background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 400px;
-            width: 90%;
-            border: 1px solid #444;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s ease;
+            background: rgba(36, 36, 38, 0.98);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 26px 26px 0 0;
+            padding: 24px 20px calc(var(--safe-bottom) + 24px) 20px;
+            max-width: 500px;
+            width: 100%;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+            animation: slideUpSheet 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 36px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 2px;
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin: 10px 0 18px 0;
         }
 
         .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
         }
 
         .close-btn {
-            background: transparent;
+            background: rgba(120, 120, 128, 0.32);
             border: none;
-            color: #999;
-            font-size: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
             cursor: pointer;
-            padding: 5px;
-            transition: all 0.2s ease;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease;
+            font-weight: 600;
         }
 
-        .close-btn:hover {
-            color: #fff;
-            transform: rotate(90deg);
+        .close-btn:active {
+            transform: scale(0.9);
         }
 
         .setting-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #333;
+            padding: 13px 15px;
+            background: rgba(58, 58, 60, 0.45);
+            margin-bottom: 2px;
         }
 
-        .setting-item:last-child {
-            border-bottom: none;
+        .setting-item:first-of-type {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .setting-item:last-of-type {
+            border-radius: 0 0 12px 12px;
         }
 
         .setting-label {
             font-size: 0.95rem;
-            color: #ccc;
+            color: var(--text-primary);
+            font-weight: 500;
         }
 
         .toggle-switch {
             position: relative;
-            width: 50px;
-            height: 26px;
-            background: #333;
-            border-radius: 13px;
+            width: 51px;
+            height: 31px;
+            background: rgba(120, 120, 128, 0.32);
+            border-radius: 16px;
             cursor: pointer;
-            transition: background 0.3s ease;
+            transition: background 0.25s ease;
+            flex-shrink: 0;
         }
 
         .toggle-switch.active {
-            background: #ff6b6b;
+            background: var(--success);
         }
 
         .toggle-switch::after {
             content: '';
             position: absolute;
-            top: 3px;
-            left: 3px;
-            width: 20px;
-            height: 20px;
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
             background: #fff;
             border-radius: 50%;
-            transition: transform 0.3s ease;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
         }
 
         .toggle-switch.active::after {
-            transform: translateX(24px);
+            transform: translateX(20px);
         }
 
         .keyboard-shortcuts {
             font-size: 0.85rem;
-            color: #999;
-            margin-top: 20px;
+            color: var(--text-secondary);
+            margin-top: 18px;
             padding: 15px;
-            background: #1a1a1a;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
+            background: rgba(58, 58, 60, 0.45);
+            border-radius: 12px;
         }
 
         .shortcut-item {
             display: flex;
             justify-content: space-between;
-            margin: 8px 0;
+            align-items: center;
+            margin: 9px 0;
         }
 
         .shortcut-key {
-            background: #2a2a2a;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: #ff6b6b;
+            background: rgba(120, 120, 128, 0.4);
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-family: 'SF Mono', ui-monospace, monospace;
+            font-size: 0.76rem;
+            color: var(--text-primary);
+            font-weight: 600;
         }
 
         @keyframes fadeIn {
@@ -809,10 +932,10 @@
             to { opacity: 1; }
         }
 
-        @keyframes slideUp {
+        @keyframes slideUpSheet {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(100%);
             }
             to {
                 opacity: 1;
@@ -829,439 +952,283 @@
             animation: pulse 2s infinite;
         }
 
-        @media (max-width: 480px) {
-            body {
-                padding: 6px;
-                font-size: 16px;
-            }
-
-            .container {
-                padding: 0 2px;
-                max-width: 100%;
-            }
-
-            .header {
-                margin-bottom: 15px;
-                padding-bottom: 12px;
-            }
-
-            .header h1 {
-                font-size: 1.75rem;
-                letter-spacing: -0.3px;
-            }
-
-            .header p {
-                font-size: 0.95rem;
-            }
-
-            .settings-btn {
-                font-size: 1.6rem;
-                padding: 8px 10px;
-                min-width: 44px;
-                min-height: 44px;
-            }
-
-            .day-selector {
-                gap: 6px;
-                margin-bottom: 15px;
-            }
-
-            .day-btn {
-                padding: 18px 4px;
-                font-size: 0.85rem;
-                min-height: 54px;
-                border-radius: 8px;
-            }
-
-            .workout-title {
-                font-size: 1.6rem;
-                margin-bottom: 6px;
-            }
-
-            .workout-meta {
-                font-size: 0.9rem;
-                margin-bottom: 15px;
-            }
-
-            .timer-section {
-                padding: 18px 12px;
-                margin-bottom: 15px;
-                border-radius: 10px;
-            }
-
-            .current-exercise-display {
-                padding: 18px 14px;
-                margin-bottom: 16px;
-            }
-
-            .exercise-progress {
-                font-size: 0.7rem;
-                margin-bottom: 8px;
-            }
-
-            .current-exercise-name {
-                font-size: 1.65rem;
-                margin-bottom: 8px;
-                line-height: 1.2;
-            }
-
-            .current-exercise-details {
-                font-size: 1.05rem;
-                line-height: 1.4;
-            }
-
-            .next-up-display {
-                margin-top: 12px;
-                padding: 10px;
-            }
-
-            .next-up-label {
-                font-size: 0.65rem;
-            }
-
-            .next-up-name {
-                font-size: 0.9rem;
-            }
-
-            .phase-indicator {
-                font-size: 0.8rem;
-                margin-bottom: 10px;
-            }
-
-            .timer-display-container {
-                margin: 16px 0;
-            }
-
-            .circular-timer {
-                width: 200px;
-                height: 200px;
-            }
-
-            .circular-timer svg {
-                width: 200px;
-                height: 200px;
-            }
-
-            .timer-display {
-                font-size: 2.4rem;
-                font-weight: 300;
-            }
-
-            .timer-display-label {
-                font-size: 0.75rem;
-                letter-spacing: 1.5px;
-            }
-
-            .exercise-tracker {
-                margin-top: 16px;
-            }
-
-            .tracker-dots {
-                gap: 10px;
-                margin-top: 8px;
-            }
-
-            .tracker-dot {
-                width: 16px;
-                height: 16px;
-                border-width: 2px;
-                min-width: 16px;
-                min-height: 16px;
-            }
-
-            .timer-controls {
-                gap: 8px;
-                margin-top: 14px;
-            }
-
-            .timer-btn {
-                padding: 20px 12px;
-                font-size: 1.05rem;
-                min-height: 58px;
-                border-radius: 8px;
-                font-weight: 600;
-            }
-
-            .collapsible-section {
-                margin-top: 15px;
-            }
-
-            .collapse-btn {
-                padding: 18px 14px;
-                font-size: 1rem;
-                min-height: 54px;
-            }
-
-            .exercise-list {
-                gap: 8px;
-            }
-
-            .exercise-item {
-                padding: 14px 12px;
-            }
-
-            .exercise-name {
-                font-size: 1.15rem;
-                line-height: 1.3;
-            }
-
-            .exercise-details {
-                font-size: 1rem;
-            }
-
-            .exercise-checkbox {
-                width: 32px;
-                height: 32px;
-                min-width: 32px;
-                min-height: 32px;
-            }
-
-            .stats {
-                gap: 10px;
-                margin-top: 20px;
-                padding-top: 20px;
-            }
-
-            .stat {
-                padding: 16px 12px;
-            }
-
-            .stat-number {
-                font-size: 2rem;
-            }
-
-            .stat-label {
-                font-size: 0.75rem;
-                margin-top: 5px;
-            }
-
-            .section-title {
-                font-size: 0.8rem;
-                margin: 20px 0 10px 0;
-            }
-
-            .warmup-list {
-                font-size: 0.95rem;
-                padding: 12px;
-            }
-
-            .rest-day {
-                padding: 40px 16px;
-            }
-
-            .rest-day h2 {
-                font-size: 1.8rem;
-            }
-
-            .modal-content {
-                padding: 24px 18px;
-                width: 92%;
-            }
-
-            .modal-title {
-                font-size: 1.4rem;
-            }
-
-            .setting-item {
-                padding: 14px 0;
-            }
-
-            .setting-label {
-                font-size: 1rem;
-            }
-
-            .keyboard-shortcuts {
-                font-size: 0.9rem;
-                padding: 12px;
-            }
-
-            .shortcut-item {
-                margin: 10px 0;
-            }
-
-            .shortcut-key {
-                padding: 4px 10px;
-                font-size: 0.85rem;
-            }
-
-            .notification {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                max-width: none;
-                padding: 14px 16px;
-            }
-
-            .notification-title {
-                font-size: 1rem;
-            }
-
-            .notification-message {
-                font-size: 0.9rem;
-            }
+        .omad-card {
+            margin-top: 18px;
+            padding: 16px;
+            background: var(--bg-card);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-radius: 16px;
+            border: 0.5px solid var(--hairline);
         }
 
-        /* Extra small phones */
-        @media (max-width: 375px) {
-            body {
-                padding: 5px;
-            }
-
-            .header h1 {
-                font-size: 1.6rem;
-            }
-
-            .header p {
-                font-size: 0.85rem;
-            }
-
-            .day-btn {
-                padding: 16px 3px;
-                font-size: 0.8rem;
-                min-height: 50px;
-            }
-
-            .workout-title {
-                font-size: 1.4rem;
-            }
-
-            .current-exercise-name {
-                font-size: 1.5rem;
-            }
-
-            .current-exercise-details {
-                font-size: 1rem;
-            }
-
-            .circular-timer {
-                width: 180px;
-                height: 180px;
-            }
-
-            .circular-timer svg {
-                width: 180px;
-                height: 180px;
-            }
-
-            .timer-display {
-                font-size: 2.2rem;
-            }
-
-            .timer-btn {
-                padding: 18px 10px;
-                font-size: 1rem;
-                min-height: 54px;
-            }
-
-            .exercise-name {
-                font-size: 1.05rem;
-            }
-
-            .exercise-details {
-                font-size: 0.9rem;
-            }
-
-            .stat-number {
-                font-size: 1.75rem;
-            }
+        .omad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        /* Very small phones (iPhone SE, etc.) */
-        @media (max-width: 360px) {
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .day-btn {
-                padding: 14px 2px;
-                font-size: 0.75rem;
-                min-height: 48px;
-            }
-
-            .circular-timer {
-                width: 160px;
-                height: 160px;
-            }
-
-            .circular-timer svg {
-                width: 160px;
-                height: 160px;
-            }
-
-            .timer-display {
-                font-size: 2rem;
-            }
-
-            .current-exercise-name {
-                font-size: 1.35rem;
-            }
-
-            .timer-btn {
-                padding: 16px 8px;
-                font-size: 0.95rem;
-                min-height: 52px;
-            }
+        .omad-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
         }
 
-        /* Landscape mode */
-        @media (max-height: 500px) and (orientation: landscape) {
-            body {
-                padding: 5px;
+        .omad-status {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .omad-body {
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .omad-countdown {
+            font-size: 2.4rem;
+            font-weight: 200;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -1px;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .omad-countdown-label {
+            font-size: 0.62rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
+            margin-top: 6px;
+        }
+
+        .omad-time-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding: 10px 14px;
+            background: var(--bg-inset);
+            border-radius: 12px;
+            border: 0.5px solid var(--hairline);
+        }
+
+        .omad-label {
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .omad-time-input {
+            background: rgba(120, 120, 128, 0.24);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 6px 10px;
+            font-family: inherit;
+            color-scheme: dark;
+            -webkit-appearance: none;
+        }
+
+        /* ===== Focus mode: while the timer runs, hide everything that isn't
+           the clock so the whole workout view fits on screen without
+           scrolling. ===== */
+        body.timer-active .omad-card,
+        body.timer-active .program-selector,
+        body.timer-active .day-selector,
+        body.timer-active .progress-bar,
+        body.timer-active .workout-title,
+        body.timer-active .workout-meta,
+        body.timer-active .collapsible-section,
+        body.timer-active .section-title,
+        body.timer-active #workoutContainer > .warmup-list,
+        body.timer-active .complete-btn,
+        body.timer-active .stats {
+            display: none;
+        }
+
+        body.timer-active .header {
+            margin-bottom: 8px;
+            padding: 0;
+        }
+
+        body.timer-active .header h1 {
+            font-size: 1.2rem;
+            letter-spacing: -0.3px;
+        }
+
+        body.timer-active .settings-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 1rem;
+            top: -4px;
+        }
+
+        body.timer-active .timer-section {
+            padding: 12px 12px;
+            margin-bottom: 0;
+        }
+
+        body.timer-active .current-exercise-display {
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+
+        body.timer-active .exercise-progress {
+            margin-bottom: 5px;
+            font-size: 0.58rem;
+            padding: 3px 8px;
+        }
+
+        body.timer-active .current-exercise-name {
+            font-size: 1.3rem;
+            margin-bottom: 3px;
+        }
+
+        body.timer-active .current-exercise-details {
+            font-size: 0.82rem;
+        }
+
+        body.timer-active .next-up-display {
+            margin-top: 8px;
+            padding: 6px 10px;
+        }
+
+        body.timer-active .phase-indicator {
+            margin-bottom: 8px;
+        }
+
+        body.timer-active .timer-display-container {
+            margin: 6px 0 10px 0;
+        }
+
+        body.timer-active .exercise-tracker {
+            margin-top: 10px;
+        }
+
+        body.timer-active .timer-controls {
+            margin-top: 10px;
+        }
+
+        @media (max-height: 750px) {
+            body.timer-active .circular-timer {
+                width: 210px;
+                height: 210px;
             }
 
-            .header {
-                margin-bottom: 10px;
-                padding-bottom: 10px;
-            }
-
-            .circular-timer {
-                width: 140px;
-                height: 140px;
-            }
-
-            .timer-section {
-                padding: 15px;
-            }
-
-            .day-selector {
-                margin-bottom: 10px;
+            body.timer-active .timer-display {
+                font-size: 2.8rem;
             }
         }
 
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
-            border: 1px solid #ff6b6b;
-            border-radius: 8px;
-            padding: 15px 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            top: calc(var(--safe-top) + 10px);
+            left: 12px;
+            right: 12px;
+            background: rgba(44, 44, 46, 0.96);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 13px 17px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
             z-index: 2000;
-            animation: slideInRight 0.3s ease;
-            max-width: 300px;
+            animation: slideInDown 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+            max-width: 480px;
+            margin: 0 auto;
         }
 
-        @keyframes slideInRight {
+        @keyframes slideInDown {
             from {
                 opacity: 0;
-                transform: translateX(100%);
+                transform: translateY(-120%);
             }
             to {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateY(0);
             }
         }
 
         .notification-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #ff6b6b;
+            font-weight: 700;
+            margin-bottom: 2px;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            letter-spacing: -0.2px;
         }
 
         .notification-message {
-            font-size: 0.85rem;
-            color: #ccc;
+            font-size: 0.83rem;
+            color: var(--text-secondary);
+        }
+
+        /* Small phones */
+        @media (max-width: 390px) {
+            body {
+                padding-left: calc(var(--safe-left) + 13px);
+                padding-right: calc(var(--safe-right) + 13px);
+            }
+
+            .header h1 {
+                font-size: 1.9rem;
+            }
+
+            .circular-timer {
+                width: 220px;
+                height: 220px;
+            }
+
+            .timer-display {
+                font-size: 3rem;
+            }
+
+            .current-exercise-name {
+                font-size: 1.45rem;
+            }
+        }
+
+        @media (max-width: 350px) {
+            .circular-timer {
+                width: 195px;
+                height: 195px;
+            }
+
+            .timer-display {
+                font-size: 2.6rem;
+            }
+
+            .day-btn {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Landscape */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .header {
+                margin-bottom: 10px;
+            }
+
+            .circular-timer {
+                width: 150px;
+                height: 150px;
+            }
+
+            .timer-display {
+                font-size: 2rem;
+            }
+
+            .day-selector {
+                margin-bottom: 10px;
+            }
         }
     </style>
 </head>
@@ -1270,10 +1237,15 @@
         <div class="header">
             <button class="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
             <h1>Fight Club</h1>
-            <p>Week <span id="currentWeek">1</span> • 175→165 lbs</p>
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill" style="width: 0%"></div>
             </div>
+        </div>
+
+        <div class="program-selector">
+            <button class="program-btn" data-program="fightclub" onclick="selectProgram('fightclub')">Fight Club</button>
+            <button class="program-btn" data-program="upperlower" onclick="selectProgram('upperlower')">Upper/Lower</button>
+            <button class="program-btn" data-program="home45" onclick="selectProgram('home45')">Home 45</button>
         </div>
 
         <div class="day-selector">
@@ -1287,6 +1259,24 @@
         </div>
 
         <div id="workoutContainer"></div>
+
+        <div class="omad-card" id="omadCard">
+            <div class="omad-header">
+                <div>
+                    <div class="omad-title">🍽 OMAD Fast</div>
+                    <div class="omad-status" id="omadStatus">Off</div>
+                </div>
+                <div class="toggle-switch" id="omadToggle" onclick="toggleOmad()"></div>
+            </div>
+            <div class="omad-body" id="omadBody" style="display: none;">
+                <div class="omad-countdown" id="omadCountdown">--:--:--</div>
+                <div class="omad-countdown-label" id="omadCountdownLabel">until meal time</div>
+                <div class="omad-time-row">
+                    <label class="omad-label" for="omadTime">Daily meal time</label>
+                    <input type="time" id="omadTime" class="omad-time-input" value="18:00" onchange="setOmadTime(this.value)">
+                </div>
+            </div>
+        </div>
 
         <div class="stats">
             <div class="stat">
@@ -1304,7 +1294,7 @@
         </div>
 
         <a href="raw-dawg.html" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:18px 0 4px;padding:14px;border:1px solid #333;border-radius:12px;background:rgba(255,107,107,0.06);color:#ff6b6b;text-decoration:none;font-weight:700;font-size:0.9rem;letter-spacing:0.3px;">
-            🔥 RAW DAWG — Life Tracker →
+            🔥 PROTOCOL — Discipline Tracker →
         </a>
     </div>
 
@@ -1353,19 +1343,296 @@
     </div>
 
     <script>
-        const workoutData = {
+        // Capacitor is available globally in native apps
+        const Capacitor = window.Capacitor || {};
+        const Haptics = Capacitor.Plugins?.Haptics;
+        const LocalNotifications = Capacitor.Plugins?.LocalNotifications;
+
+        // Haptic impact styles
+        const ImpactStyle = {
+            Heavy: 'HEAVY',
+            Medium: 'MEDIUM',
+            Light: 'LIGHT'
+        };
+
+        // Haptic feedback helper
+        async function haptic(style = ImpactStyle.Light) {
+            try {
+                if (Haptics) {
+                    await Haptics.impact({ style });
+                }
+            } catch (e) {
+                console.log('Haptics unavailable:', e);
+            }
+        }
+
+        // ===== Live Activity (lock screen + Dynamic Island timer) =====
+        const LiveActivity = Capacitor.Plugins?.LiveActivity;
+        let liveActivityRunning = false;
+
+        function liveActivityPayload() {
+            const workout = workoutData[currentDay];
+            const ex = workout.exercises?.[currentExercise];
+            const next = workout.exercises?.[currentExercise + 1];
+            return {
+                workoutTitle: workout.title,
+                exercise: ex ? ex.name : workout.title,
+                nextExercise: next ? next.name : '',
+                phase: isWorkPhase ? 'WORK' : 'REST',
+                round: currentRound,
+                totalRounds: workout.rounds || 1,
+                endTime: phaseEndAt,
+                exerciseIndex: currentExercise + 1,
+                totalExercises: workout.exercises ? workout.exercises.length : 1
+            };
+        }
+
+        async function startLiveActivity() {
+            if (!LiveActivity) return;
+            try {
+                await LiveActivity.start(liveActivityPayload());
+                liveActivityRunning = true;
+            } catch (e) {
+                console.log('Live Activity unavailable:', e);
+            }
+        }
+
+        async function updateLiveActivity() {
+            if (!LiveActivity || !liveActivityRunning) return;
+            try {
+                await LiveActivity.update(liveActivityPayload());
+            } catch (e) {
+                console.log('Live Activity update failed:', e);
+            }
+        }
+
+        async function endLiveActivity() {
+            if (!LiveActivity || !liveActivityRunning) return;
+            liveActivityRunning = false;
+            try {
+                await LiveActivity.end();
+            } catch (e) {
+                console.log('Live Activity end failed:', e);
+            }
+        }
+
+        // ===== Pre-scheduled phase-end notifications =====
+        // iOS freezes JS when the app is backgrounded/locked, so notifications
+        // fired "live" from JS never arrive. Instead we pre-schedule the entire
+        // remaining sequence of phase changes with iOS whenever a phase starts.
+        // While the app is awake, each flip cancels and re-schedules the chain,
+        // and the in-app banner is shown instead.
+        const PHASE_NOTIFICATION_BASE_ID = 1001;
+        const MAX_SCHEDULED_NOTIFICATIONS = 60; // iOS caps pending at 64
+
+        function buildPhaseNotificationChain() {
+            const workout = workoutData[currentDay];
+            if (!workout.exercises || !workout.workTime) return [];
+
+            const chain = [];
+            let simWork = isWorkPhase;
+            let simExercise = currentExercise;
+            let simRound = currentRound;
+            let at = phaseEndAt;
+
+            while (chain.length < MAX_SCHEDULED_NOTIFICATIONS) {
+                if (simWork) {
+                    chain.push({ at, title: 'Rest Time!', body: 'Take a break' });
+                    if (!settings.autoAdvance && chain.length > 1) break;
+                    simWork = false;
+                    at += (workout.restTime || 0) * 1000;
+                } else {
+                    if (!settings.autoAdvance) {
+                        chain.push({ at, title: 'Exercise Complete!', body: 'Ready for next?' });
+                        break;
+                    }
+                    if (simExercise < workout.exercises.length - 1) {
+                        simExercise++;
+                        chain.push({ at, title: 'Next Exercise', body: workout.exercises[simExercise].name });
+                    } else if (simRound < (workout.rounds || 1)) {
+                        simRound++;
+                        simExercise = 0;
+                        chain.push({ at, title: 'Round Complete!', body: `Starting Round ${simRound}` });
+                    } else {
+                        chain.push({ at, title: 'Workout Complete!', body: 'Great job! 💪' });
+                        break;
+                    }
+                    simWork = true;
+                    at += workout.workTime * 1000;
+                }
+            }
+            return chain;
+        }
+
+        async function schedulePhaseEndNotification() {
+            if (!LocalNotifications || !settings.notifications) return;
+            try {
+                await cancelPhaseEndNotification();
+                const chain = buildPhaseNotificationChain();
+                if (!chain.length) return;
+                await LocalNotifications.schedule({
+                    notifications: chain.map((n, i) => ({
+                        id: PHASE_NOTIFICATION_BASE_ID + i,
+                        title: n.title,
+                        body: n.body,
+                        // 1s after the flip so foreground JS can cancel first
+                        schedule: { at: new Date(n.at + 1000), allowWhileIdle: true },
+                        sound: 'default'
+                    }))
+                });
+            } catch (e) {
+                console.log('Failed to schedule notifications:', e);
+            }
+        }
+
+        async function cancelPhaseEndNotification() {
+            if (!LocalNotifications) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: Array.from(
+                        { length: MAX_SCHEDULED_NOTIFICATIONS },
+                        (_, i) => ({ id: PHASE_NOTIFICATION_BASE_ID + i })
+                    )
+                });
+            } catch (e) {
+                // nothing pending
+            }
+        }
+
+        // Cancel a single chain entry (chain index i = end of timeline segment i)
+        async function cancelChainNotification(chainIndex) {
+            if (!LocalNotifications || chainIndex < 0 || chainIndex >= MAX_SCHEDULED_NOTIFICATIONS) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: [{ id: PHASE_NOTIFICATION_BASE_ID + chainIndex }]
+                });
+            } catch (e) {
+                // already delivered or not pending — fine
+            }
+        }
+
+        // ===== OMAD fast scheduler =====
+        // One meal a day: shows a live countdown to the next meal and fires
+        // daily repeating notifications (30-min heads-up + meal-time alert)
+        // that work even when the app is closed.
+        const OMAD_MEAL_ID = 2001;
+        const OMAD_PREALERT_ID = 2002;
+        let omad = JSON.parse(localStorage.getItem('omad') || '{"enabled": false, "time": "18:00"}');
+
+        function omadNextMeal() {
+            const [h, m] = omad.time.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+            return d;
+        }
+
+        function omadTimeLabel() {
+            const [h, m] = omad.time.split(':').map(Number);
+            const d = new Date();
+            d.setHours(h, m, 0, 0);
+            return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        }
+
+        async function scheduleOmadNotifications() {
+            if (!LocalNotifications) return;
+            try {
+                await LocalNotifications.cancel({
+                    notifications: [{ id: OMAD_MEAL_ID }, { id: OMAD_PREALERT_ID }]
+                });
+                if (!omad.enabled) return;
+
+                const [h, m] = omad.time.split(':').map(Number);
+                const pre = new Date();
+                pre.setHours(h, m, 0, 0);
+                pre.setMinutes(pre.getMinutes() - 30);
+
+                // schedule.on = daily repeating calendar trigger on iOS
+                await LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            id: OMAD_MEAL_ID,
+                            title: '🍽 Meal Time!',
+                            body: 'Fast complete — time to eat. Protein first, veggies for volume.',
+                            schedule: { on: { hour: h, minute: m }, allowWhileIdle: true },
+                            sound: 'default'
+                        },
+                        {
+                            id: OMAD_PREALERT_ID,
+                            title: 'Meal in 30 minutes',
+                            body: 'Start prepping now — never decide what to eat ravenous.',
+                            schedule: { on: { hour: pre.getHours(), minute: pre.getMinutes() }, allowWhileIdle: true },
+                            sound: 'default'
+                        }
+                    ]
+                });
+            } catch (e) {
+                console.log('OMAD scheduling failed:', e);
+            }
+        }
+
+        function updateOmadUI() {
+            const toggle = document.getElementById('omadToggle');
+            const body = document.getElementById('omadBody');
+            const status = document.getElementById('omadStatus');
+            const input = document.getElementById('omadTime');
+            if (!toggle) return;
+
+            toggle.classList.toggle('active', omad.enabled);
+            body.style.display = omad.enabled ? 'block' : 'none';
+            status.textContent = omad.enabled
+                ? `Daily meal at ${omadTimeLabel()} • alerts on`
+                : 'Off';
+            input.value = omad.time;
+            omadTick();
+        }
+
+        function omadTick() {
+            if (!omad.enabled) return;
+            const el = document.getElementById('omadCountdown');
+            if (!el) return;
+            const diff = Math.max(0, omadNextMeal().getTime() - Date.now());
+            const hh = Math.floor(diff / 3600000);
+            const mm = Math.floor((diff % 3600000) / 60000);
+            const ss = Math.floor((diff % 60000) / 1000);
+            el.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+        }
+
+        function toggleOmad() {
+            omad.enabled = !omad.enabled;
+            localStorage.setItem('omad', JSON.stringify(omad));
+            if (omad.enabled) requestNotificationPermission();
+            scheduleOmadNotifications();
+            updateOmadUI();
+            playBeep(700, 80);
+            if (omad.enabled) {
+                showNotification('OMAD Fast On', `You'll be alerted at ${omadTimeLabel()} daily`);
+            }
+        }
+
+        function setOmadTime(value) {
+            if (!/^\d{2}:\d{2}$/.test(value)) return;
+            omad.time = value;
+            localStorage.setItem('omad', JSON.stringify(omad));
+            scheduleOmadNotifications();
+            updateOmadUI();
+            playBeep(600, 80);
+        }
+
+        const PROGRAMS = {
+          fightclub: { name: 'Fight Club', days: {
             1: {
                 title: "Upper Body KB",
                 duration: "25-30 min",
                 type: "circuit",
-                warmup: ["Arm circles • Shoulder rolls • Band pull-aparts", "10 squats • 5 push-ups"],
+                warmup: ["Arm circles • Shoulder rolls • KB halos", "10 squats • 5 push-ups"],
                 exercises: [
                     { name: "KB Swings", details: "Focus on hips, powerful movement" },
                     { name: "KB Clean & Press", details: "Alt arms each round" },
                     { name: "KB Rows", details: "Single arm, alt sides" },
                     { name: "Push-ups", details: "Modify as needed" },
                     { name: "KB High Pulls", details: "Explosive, full extension" },
-                    { name: "Band Face Pulls", details: "Squeeze shoulder blades" }
+                    { name: "KB Halos", details: "Slow circles around head, elbows tight" }
                 ],
                 rounds: 4,
                 workTime: 45,
@@ -1394,7 +1661,7 @@
                     { name: "KB Goblet Squats", details: "Deep position, chest up" },
                     { name: "Single-leg Deadlifts", details: "KB opposite hand, balance" },
                     { name: "KB Swings", details: "Hip hinge, explosive" },
-                    { name: "Band Squats", details: "Band above knees, push out" },
+                    { name: "KB Reverse Lunges", details: "Goblet hold, alt legs" },
                     { name: "Plank", details: "Progress from knees to full" },
                     { name: "KB Figure-8s", details: "Around legs, smooth motion" }
                 ],
@@ -1418,9 +1685,9 @@
                 warmup: ["Dynamic full body movements"],
                 exercises: [
                     { name: "KB Clean & Squat", details: "Explosive, full movement" },
-                    { name: "Push-ups to T", details: "With band resistance" },
+                    { name: "Push-ups to T", details: "Rotate to side plank each rep" },
                     { name: "KB Single Swing", details: "Alt arms, control" },
-                    { name: "Band Rows", details: "Squeeze shoulder blades" },
+                    { name: "KB Gorilla Rows", details: "Hinge position, alt arms, flat back" },
                     { name: "KB Windmill", details: "Light weight, perfect form" },
                     { name: "Mountain Climbers", details: "Fast feet, core tight" }
                 ],
@@ -1443,7 +1710,194 @@
                 message: "Your body grows during rest. Recovery is part of the process.",
                 activities: ["Light stretching or yoga", "Meal prep for the week", "Get 8+ hours of quality sleep", "Hydrate and reflect on your progress"]
             }
+          }},
+
+          upperlower: { name: 'Upper/Lower', days: {
+            1: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "The incline does the fat-burning, not speed" }
+                ]
+            },
+            2: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "Low joint stress, high burn" }
+                ]
+            },
+            3: {
+                title: "Rest Day",
+                type: "rest",
+                message: "Easy day so the weekend lifts have something to recover on.",
+                activities: ["Light stretching or a short stroll", "Protein at every meal — never get ravenous", "Glass of water before eating", "Protect your sleep — it protects the deficit"]
+            },
+            4: {
+                title: "Incline Walk",
+                duration: "45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Treadmill Walk", details: "3.5-4.0 mph, steady pace" },
+                    { name: "Incline 6-10%", details: "Podcast pace — just keep moving" }
+                ]
+            },
+            5: {
+                title: "Easy Cardio",
+                duration: "30-45 min",
+                type: "steady",
+                exercises: [
+                    { name: "Easy Walk", details: "Lighter effort — save legs for the weekend" },
+                    { name: "Optional Mobility", details: "Hips, shoulders, 10 min" }
+                ]
+            },
+            6: {
+                title: "Upper (Push + Pull)",
+                duration: "~45 min",
+                type: "circuit",
+                warmup: ["March 2 min • Arm circles • KB halos ×8 each way", "Push-ups ×10 • Dead hang 20 sec"],
+                exercises: [
+                    { name: "KB Overhead Press", details: "Double 25s or single 35 • 8-10 reps, no lean-back" },
+                    { name: "Pull-Ups", details: "Dead hang start, pull shoulder blades down first • 6-10" },
+                    { name: "KB Floor/Bench Press", details: "Double 35s or single 50 • 8-12, slow negative" },
+                    { name: "KB Bent-Over Row", details: "50 lb • 10-12 each side, squeeze at top" },
+                    { name: "KB Lateral Raise", details: "25 lb • 12-15, lead with the elbow" },
+                    { name: "KB High Pull", details: "35 lb • 12-15, elbows lead to collarbone" },
+                    { name: "Push-Ups", details: "AMRAP — chest to floor, full range" },
+                    { name: "KB Shrugs", details: "Heavy • 15-20, hold 1 sec at top" }
+                ],
+                rounds: 4,
+                workTime: 40,
+                restTime: 40,
+                finisher: ["2-3 rounds, minimal rest:", "KB Lateral Raise — 20 reps", "KB Curls — 25/35 • 12-15 reps", "Bench Dips — max reps"],
+                cooldown: ["Doorway chest stretch • Cross-body shoulder stretch", "Overhead lat/tricep stretch • Deep breathing"]
+            },
+            7: {
+                title: "Lower (Back-Friendly)",
+                duration: "~45 min",
+                type: "circuit",
+                warmup: ["March 2 min • Bodyweight squats ×15 • Leg swings ×10", "Glute bridges ×15 • Cat-cow ×10 — wake the spine up", "⚠️ Back cranky? Swap swings/RDLs for glute bridges"],
+                exercises: [
+                    { name: "KB Goblet Squat", details: "35/50 • 12-15, chest up, full depth" },
+                    { name: "KB Reverse Lunge", details: "35 goblet • 10-12 each leg, knee over ankle" },
+                    { name: "KB Swing", details: "35/50 • 15-20 — hip snap powers it, NOT the low back" },
+                    { name: "Bulgarian Split Squat", details: "Rear foot on bench • 8-12 each leg, torso upright" },
+                    { name: "Single-Leg RDL", details: "35 • 10-12 each leg, hinge at hip, flat back" },
+                    { name: "Goblet Pulse / Wall Sit", details: "Bottom-third pulses ×15 or 45 sec hold" },
+                    { name: "Calf Raises", details: "50 held • 20-25, full stretch, squeeze at top" }
+                ],
+                rounds: 4,
+                workTime: 40,
+                restTime: 50,
+                finisher: ["2-3 rounds, minimal rest:", "KB Swings — 35 • 20 reps", "Jump squats or fast goblet squats — 15", "Glute bridge hold — 30 sec"],
+                cooldown: ["Hamstring • quad • hip flexor stretches", "Child's pose — ease in, respect the back"]
+            }
+          }},
+
+          home45: { name: 'Home 45', days: {
+            1: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            2: {
+                title: "Easy Walk + Mobility",
+                duration: "30-40 min",
+                type: "steady",
+                exercises: [
+                    { name: "Walk", details: "20-30 min, easy pace" },
+                    { name: "Mobility", details: "Hips + shoulders, 10 min" }
+                ]
+            },
+            3: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            4: {
+                title: "Easy Walk + Mobility",
+                duration: "30-40 min",
+                type: "steady",
+                exercises: [
+                    { name: "Walk", details: "20-30 min, easy pace" },
+                    { name: "Mobility", details: "Hips + shoulders, 10 min" }
+                ]
+            },
+            5: {
+                title: "Full Body 45",
+                duration: "45 min",
+                type: "circuit",
+                warmup: ["Jumping jacks 1 min • Arm circles", "10 squats • 5 push-ups • KB halos"],
+                exercises: [
+                    { name: "KB Swings", details: "Hip snap, flat back" },
+                    { name: "KB Goblet Squat", details: "Full depth, chest up" },
+                    { name: "Push-Ups", details: "Chest to floor" },
+                    { name: "KB Bent-Over Row", details: "Alt arms each round" },
+                    { name: "KB Clean & Press", details: "Alt arms, explosive" },
+                    { name: "KB Reverse Lunge", details: "Alt legs, goblet hold" },
+                    { name: "Plank", details: "Straight line, tight core" },
+                    { name: "Mountain Climbers", details: "Fast feet" }
+                ],
+                rounds: 5,
+                workTime: 40,
+                restTime: 20,
+                cooldown: ["Full body stretch • Deep breathing"]
+            },
+            6: {
+                title: "Active Recovery",
+                duration: "45-60 min",
+                type: "steady",
+                exercises: [
+                    { name: "Brisk Walk", details: "Easy effort, enjoy the movement" },
+                    { name: "Stretch", details: "Anything tight from the week" }
+                ]
+            },
+            7: {
+                title: "Rest Day",
+                type: "rest",
+                message: "Your body grows during rest. Recovery is part of the process.",
+                activities: ["Light stretching or yoga", "Meal prep for the week", "Get 8+ hours of quality sleep", "Hydrate and reflect on your progress"]
+            }
+          }}
         };
+
+        let currentProgram = localStorage.getItem('program') || 'fightclub';
+        if (!PROGRAMS[currentProgram]) currentProgram = 'fightclub';
+        let workoutData = PROGRAMS[currentProgram].days;
 
         let currentDay = 1;
         let currentExercise = 0;
@@ -1451,6 +1905,7 @@
         let timerInterval;
         let currentTime = 0;
         let totalTime = 0;
+        let phaseEndAt = 0; // wall-clock ms timestamp when current phase ends
         let isRunning = false;
         let isPaused = false;
         let isWorkPhase = true;
@@ -1462,7 +1917,16 @@
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioContext();
 
-        function playBeep(frequency = 800, duration = 100) {
+        async function playBeep(frequency = 800, duration = 100) {
+            // Haptic feedback for important events
+            if (frequency >= 900) {
+                await haptic(ImpactStyle.Heavy); // Timer end, workout complete
+            } else if (frequency >= 700) {
+                await haptic(ImpactStyle.Medium); // Button press, exercise change
+            } else {
+                await haptic(ImpactStyle.Light); // Minor feedback
+            }
+
             if (!settings.sound) return;
 
             const oscillator = audioContext.createOscillator();
@@ -1481,18 +1945,14 @@
             oscillator.stop(audioContext.currentTime + duration / 1000);
         }
 
-        function showNotification(title, message) {
+        async function showNotification(title, message) {
             if (!settings.notifications) return;
 
-            // Browser notification
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: message,
-                    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75">💪</text></svg>'
-                });
-            }
+            // Native haptic feedback
+            await haptic(ImpactStyle.Medium);
 
-            // In-app notification
+            // In-app banner. Background/locked delivery is handled by the
+            // pre-scheduled phase-end notifications (schedulePhaseEndNotification).
             const notification = document.createElement('div');
             notification.className = 'notification';
             notification.innerHTML = `
@@ -1504,16 +1964,19 @@
             setTimeout(() => {
                 notification.remove();
             }, 3000);
-
-            // Haptic feedback on mobile
-            if ('vibrate' in navigator) {
-                navigator.vibrate([100, 50, 100]);
-            }
         }
 
-        function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
+        async function requestNotificationPermission() {
+            // Request native notification permissions
+            if (LocalNotifications) {
+                try {
+                    const permission = await LocalNotifications.checkPermissions();
+                    if (permission.display === 'prompt') {
+                        await LocalNotifications.requestPermissions();
+                    }
+                } catch (e) {
+                    console.log('Notification permissions not available:', e);
+                }
             }
         }
 
@@ -1527,6 +1990,23 @@
             updateDayButtons();
             loadWorkout();
             saveState();
+        }
+
+        function selectProgram(id) {
+            if (!PROGRAMS[id] || id === currentProgram) return;
+            stopTimer();
+            currentProgram = id;
+            workoutData = PROGRAMS[id].days;
+            localStorage.setItem('program', id);
+            updateProgramButtons();
+            selectDay(currentDay);
+            playBeep(600, 100);
+        }
+
+        function updateProgramButtons() {
+            document.querySelectorAll('.program-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.program === currentProgram);
+            });
         }
 
         function updateDayButtons() {
@@ -1588,7 +2068,7 @@
                         </div>
                         <div class="timer-display-container">
                             <div class="circular-timer">
-                                <svg width="220" height="220">
+                                <svg viewBox="0 0 220 220" preserveAspectRatio="xMidYMid meet">
                                     <circle class="circular-timer-bg" cx="110" cy="110" r="${radius}"></circle>
                                     <circle class="circular-timer-progress work" cx="110" cy="110" r="${radius}"
                                         id="timerCircle"
@@ -1605,7 +2085,7 @@
                         <div class="exercise-tracker">
                             <div class="tracker-dots" id="trackerDots">
                                 ${workout.exercises.map((ex, idx) => {
-                                    const exerciseKey = `${currentDay}-${idx}`;
+                                    const exerciseKey = `${currentProgram}-${currentDay}-${idx}`;
                                     const isCompleted = completedExercises[exerciseKey] || false;
                                     const isActive = idx === currentExercise;
                                     return `<div class="tracker-dot ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}"
@@ -1627,8 +2107,11 @@
                             <button class="timer-btn" onclick="prevExercise()">
                                 <span>← Prev</span>
                             </button>
-                            <button class="timer-btn half" onclick="nextExercise()">
+                            <button class="timer-btn" onclick="nextExercise()">
                                 <span>Next →</span>
+                            </button>
+                            <button class="timer-btn" onclick="skipRound()" title="Skip to next round">
+                                <span>⏭ Round</span>
                             </button>
                         </div>
                     </div>
@@ -1661,7 +2144,7 @@
             `;
 
             workout.exercises.forEach((exercise, index) => {
-                const exerciseKey = `${currentDay}-${index}`;
+                const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
                 const isCompleted = completedExercises[exerciseKey] || false;
                 const isActive = index === currentExercise;
 
@@ -1683,6 +2166,15 @@
 
             html += `</div></div></div>`;
 
+            if (workout.finisher) {
+                html += `
+                    <div class="section-title">🔥 Finisher</div>
+                    <div class="warmup-list">
+                        ${workout.finisher.map(item => `<p>${item}</p>`).join('')}
+                    </div>
+                `;
+            }
+
             if (workout.cooldown) {
                 html += `
                     <div class="section-title">🧊 Cool-down</div>
@@ -1693,7 +2185,7 @@
             }
 
             html += `
-                <button class="timer-btn full primary" onclick="completeWorkout()" style="margin-top: 25px;">
+                <button class="timer-btn full primary complete-btn" onclick="completeWorkout()" style="margin-top: 25px;">
                     <span>✓ Complete Workout</span>
                 </button>
             `;
@@ -1703,7 +2195,7 @@
 
             // Restore timer state if exists
             const savedState = JSON.parse(localStorage.getItem('timerState') || '{}');
-            if (savedState.day === currentDay && savedState.time > 0) {
+            if (savedState.day === currentDay && savedState.program === currentProgram && savedState.time > 0) {
                 currentTime = savedState.time;
                 currentExercise = savedState.exercise || 0;
                 currentRound = savedState.round || 1;
@@ -1720,6 +2212,135 @@
             }
         }
 
+        // ===== Timeline-based timer engine =====
+        // The whole workout is planned in absolute wall-clock time when the
+        // timer starts (exactly like the pre-scheduled notifications). Every
+        // tick — and every return from background — just looks up "where are
+        // we right now", so the display can never drift or fall behind, no
+        // matter how long the phone stays locked.
+        let timeline = [];
+        let timelineIndex = 0;
+
+        function buildTimeline() {
+            const workout = workoutData[currentDay];
+            const segs = [];
+            let t = Date.now();
+            let simWork = isWorkPhase;
+            let simEx = currentExercise;
+            let simRound = currentRound;
+
+            const push = (dur) => {
+                segs.push({
+                    start: t, end: t + dur * 1000, duration: dur,
+                    isWork: simWork, exercise: simEx, round: simRound
+                });
+                t += dur * 1000;
+            };
+
+            // First segment: whatever time is left in the current phase
+            push(currentTime > 0 ? currentTime : (simWork ? workout.workTime : workout.restTime));
+
+            if (settings.autoAdvance) {
+                while (segs.length < 400) {
+                    if (simWork) {
+                        simWork = false;
+                        push(workout.restTime || 0);
+                    } else {
+                        if (simEx < workout.exercises.length - 1) {
+                            simEx++;
+                        } else if (simRound < (workout.rounds || 1)) {
+                            simRound++;
+                            simEx = 0;
+                        } else {
+                            break; // workout done
+                        }
+                        simWork = true;
+                        push(workout.workTime);
+                    }
+                }
+            } else if (simWork) {
+                // Manual mode: finish this work phase + its rest, then stop
+                simWork = false;
+                push(workout.restTime || 0);
+            }
+            return segs;
+        }
+
+        function applySegment(seg) {
+            isWorkPhase = seg.isWork;
+            currentExercise = seg.exercise;
+            currentRound = seg.round;
+            totalTime = seg.duration;
+            phaseEndAt = seg.end;
+            const roundEl = document.getElementById('currentRound');
+            if (roundEl) roundEl.textContent = currentRound;
+            updatePhaseDisplay();
+            updateExerciseHighlight();
+        }
+
+        function segmentEnterMessage(seg, prev) {
+            if (!seg.isWork) return { title: 'Rest Time!', body: 'Take a break' };
+            if (prev && seg.round > prev.round) return { title: 'Round Complete!', body: `Starting Round ${seg.round}` };
+            const workout = workoutData[currentDay];
+            return { title: 'Next Exercise', body: workout.exercises[seg.exercise].name };
+        }
+
+        function syncTimer() {
+            if (!isRunning || isPaused || !timeline.length) return;
+            const now = Date.now();
+            const idx = timeline.findIndex(s => now < s.end);
+
+            if (idx === -1) {
+                // Past the end of the timeline — workout (or phase pair) done
+                const wasAuto = settings.autoAdvance;
+                applySegment(timeline[timeline.length - 1]);
+                currentTime = 0;
+                stopTimer();
+                updateTimerDisplay();
+                if (wasAuto) {
+                    showNotification('Workout Complete!', 'Great job! 💪');
+                    setTimeout(() => completeWorkout(), 500);
+                } else {
+                    // Ready to start the next exercise fresh
+                    isWorkPhase = true;
+                    currentTime = 0;
+                    updatePhaseDisplay();
+                    showNotification('Exercise Complete!', 'Ready for next?');
+                }
+                return;
+            }
+
+            if (idx !== timelineIndex) {
+                const singleStep = idx === timelineIndex + 1;
+                const prev = timeline[timelineIndex];
+                applySegment(timeline[idx]);
+                timelineIndex = idx;
+
+                if (singleStep) {
+                    // Live flip while the app is awake: beep + in-app banner.
+                    // Cancel ONLY the system notification for this one flip —
+                    // never touch the rest of the chain. (Rebuilding the whole
+                    // chain here opened a window where iOS could freeze the app
+                    // between cancel and re-schedule, silencing every remaining
+                    // notification for the workout.)
+                    playBeep(1000, 200);
+                    const msg = segmentEnterMessage(timeline[idx], prev);
+                    showNotification(msg.title, msg.body);
+                    cancelChainNotification(idx - 1);
+                } // Multi-segment jump = catching up after lock: stay silent,
+                  // the system notifications already covered those flips.
+                updateLiveActivity();
+            }
+
+            currentTime = Math.max(0, Math.ceil((phaseEndAt - now) / 1000));
+            updateTimerDisplay();
+            saveState();
+
+            if (currentTime <= 3 && currentTime > 0) {
+                playBeep(800, 100);
+            }
+        }
+
         function startTimer() {
             const workout = workoutData[currentDay];
             if (!workout.workTime) return;
@@ -1733,60 +2354,22 @@
                     totalTime = currentTime;
                 }
 
+                timeline = buildTimeline();
+                timelineIndex = 0;
+                phaseEndAt = timeline[0].end;
+                totalTime = timeline[0].duration;
+                schedulePhaseEndNotification();
+                startLiveActivity();
+
+                // Focus mode: collapse everything but the clock
+                document.body.classList.add('timer-active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
                 document.getElementById('playPauseBtn').innerHTML = '<span>⏸ Pause</span>';
                 playBeep(600, 100);
+                updateTimerDisplay();
 
-                timerInterval = setInterval(() => {
-                    currentTime--;
-                    updateTimerDisplay();
-                    saveState();
-
-                    if (currentTime <= 3 && currentTime > 0) {
-                        playBeep(800, 100);
-                    }
-
-                    if (currentTime <= 0) {
-                        playBeep(1000, 200);
-
-                        if (isWorkPhase) {
-                            isWorkPhase = false;
-                            currentTime = workout.restTime;
-                            totalTime = currentTime;
-                            updatePhaseDisplay();
-                            showNotification('Rest Time!', 'Take a break');
-                        } else {
-                            isWorkPhase = true;
-
-                            if (settings.autoAdvance) {
-                                if (currentExercise < workout.exercises.length - 1) {
-                                    currentExercise++;
-                                    showNotification('Next Exercise', workout.exercises[currentExercise].name);
-                                } else {
-                                    if (currentRound < workout.rounds) {
-                                        currentRound++;
-                                        currentExercise = 0;
-                                        document.getElementById('currentRound').textContent = currentRound;
-                                        showNotification('Round Complete!', `Starting Round ${currentRound}`);
-                                    } else {
-                                        stopTimer();
-                                        showNotification('Workout Complete!', 'Great job! 💪');
-                                        setTimeout(() => completeWorkout(), 1000);
-                                        return;
-                                    }
-                                }
-                            } else {
-                                stopTimer();
-                                showNotification('Exercise Complete!', 'Ready for next?');
-                                return;
-                            }
-
-                            currentTime = workout.workTime;
-                            totalTime = currentTime;
-                            updatePhaseDisplay();
-                            updateExerciseHighlight();
-                        }
-                    }
-                }, 1000);
+                timerInterval = setInterval(syncTimer, 1000);
             }
         }
 
@@ -1794,6 +2377,11 @@
             isPaused = true;
             isRunning = false;
             clearInterval(timerInterval);
+            // Freeze remaining time at the pause moment
+            currentTime = Math.max(0, Math.ceil((phaseEndAt - Date.now()) / 1000));
+            timeline = [];
+            cancelPhaseEndNotification();
+            endLiveActivity();
             document.getElementById('playPauseBtn').innerHTML = '<span>▶ Resume</span>';
             playBeep(400, 100);
         }
@@ -1802,8 +2390,45 @@
             isRunning = false;
             isPaused = false;
             clearInterval(timerInterval);
+            timeline = [];
+            cancelPhaseEndNotification();
+            endLiveActivity();
+            document.body.classList.remove('timer-active');
             const btn = document.getElementById('playPauseBtn');
             if (btn) btn.innerHTML = '<span>▶ Start</span>';
+        }
+
+        function skipRound() {
+            const workout = workoutData[currentDay];
+            if (!workout.rounds || !workout.exercises) return;
+
+            if (currentRound < workout.rounds) {
+                const wasRunning = isRunning && !isPaused;
+                stopTimer();
+                currentRound++;
+                currentExercise = 0;
+                isWorkPhase = true;
+                currentTime = 0;
+                const roundEl = document.getElementById('currentRound');
+                if (roundEl) roundEl.textContent = currentRound;
+                updateExerciseHighlight();
+                showNotification('Round Skipped', `Round ${currentRound} — ${workout.exercises[0].name}`);
+                if (wasRunning) {
+                    startTimer();
+                } else {
+                    currentTime = workout.workTime;
+                    totalTime = currentTime;
+                    updatePhaseDisplay();
+                    updateTimerDisplay();
+                }
+                saveState();
+                playBeep(700, 100);
+            } else {
+                // Already on the last round — skipping finishes the workout
+                stopTimer();
+                showNotification('Workout Complete!', 'Great job! 💪');
+                completeWorkout();
+            }
         }
 
         function resetTimer() {
@@ -1849,36 +2474,39 @@
             updateTimerDisplay();
         }
 
-        function nextExercise() {
+        // Jump to a different exercise. If the timer was running it keeps
+        // running — a fresh work phase starts for the new exercise instead of
+        // dumping you back to a stopped timer.
+        function goToExercise(index) {
             const workout = workoutData[currentDay];
-            if (workout.exercises && currentExercise < workout.exercises.length - 1) {
-                currentExercise++;
-                updateExerciseHighlight();
-                if (isRunning || isPaused) {
-                    stopTimer();
-                    currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                    totalTime = currentTime;
-                    updateTimerDisplay();
-                }
-                playBeep(600, 100);
-                saveState();
+            if (!workout.exercises || index < 0 || index >= workout.exercises.length) return;
+
+            const wasRunning = isRunning && !isPaused;
+            if (isRunning || isPaused) stopTimer();
+
+            currentExercise = index;
+            isWorkPhase = true;
+            currentTime = 0;
+            updateExerciseHighlight();
+
+            if (wasRunning) {
+                startTimer();
+            } else {
+                currentTime = workout.workTime || 0;
+                totalTime = currentTime;
+                updatePhaseDisplay();
+                updateTimerDisplay();
             }
+            playBeep(600, 100);
+            saveState();
+        }
+
+        function nextExercise() {
+            goToExercise(currentExercise + 1);
         }
 
         function prevExercise() {
-            if (currentExercise > 0) {
-                currentExercise--;
-                updateExerciseHighlight();
-                const workout = workoutData[currentDay];
-                if (isRunning || isPaused) {
-                    stopTimer();
-                    currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                    totalTime = currentTime;
-                    updateTimerDisplay();
-                }
-                playBeep(600, 100);
-                saveState();
-            }
+            goToExercise(currentExercise - 1);
         }
 
         function updateExerciseHighlight() {
@@ -1907,7 +2535,7 @@
             // Update tracker dots
             const dots = document.querySelectorAll('.tracker-dot');
             dots.forEach((dot, index) => {
-                const exerciseKey = `${currentDay}-${index}`;
+                const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
                 const isCompleted = completedExercises[exerciseKey] || false;
                 dot.className = 'tracker-dot';
                 if (index === currentExercise) dot.classList.add('active');
@@ -1920,28 +2548,15 @@
                 item.classList.toggle('active', index === currentExercise);
             });
 
+            // Don't yank the page away from the clock while the timer runs
             const activeExercise = document.getElementById(`exercise-${currentExercise}`);
-            if (activeExercise) {
+            if (activeExercise && !document.body.classList.contains('timer-active')) {
                 activeExercise.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
         function jumpToExercise(index) {
-            const workout = workoutData[currentDay];
-            if (!workout || !workout.exercises || index < 0 || index >= workout.exercises.length) return;
-
-            currentExercise = index;
-            updateExerciseHighlight();
-
-            if (isRunning || isPaused) {
-                stopTimer();
-                currentTime = isWorkPhase ? workout.workTime : workout.restTime;
-                totalTime = currentTime;
-                updateTimerDisplay();
-            }
-
-            playBeep(600, 100);
-            saveState();
+            goToExercise(index);
         }
 
         function toggleCollapse(button) {
@@ -1964,7 +2579,7 @@
         }
 
         function toggleExercise(index) {
-            const exerciseKey = `${currentDay}-${index}`;
+            const exerciseKey = `${currentProgram}-${currentDay}-${index}`;
             completedExercises[exerciseKey] = !completedExercises[exerciseKey];
             localStorage.setItem('completedExercises', JSON.stringify(completedExercises));
 
@@ -1984,6 +2599,8 @@
         }
 
         function completeWorkout() {
+            cancelPhaseEndNotification();
+            endLiveActivity();
             if (!completedDays.includes(currentDay)) {
                 completedDays.push(currentDay);
                 localStorage.setItem('completedDays', JSON.stringify(completedDays));
@@ -2001,7 +2618,9 @@
         }
 
         function updateStats() {
-            const totalWorkouts = completedDays.length;
+            // Lifetime total = banked past weeks + this week
+            const lifetime = parseInt(localStorage.getItem('lifetimeWorkouts') || '0', 10);
+            const totalWorkouts = lifetime + completedDays.length;
             const weekProgress = completedDays.filter(day => day <= 6).length;
 
             // Calculate streak (consecutive days from most recent)
@@ -2024,14 +2643,39 @@
 
             const progressPercent = (weekProgress / 6) * 100;
             document.getElementById('progressFill').style.width = `${Math.min(progressPercent, 100)}%`;
+        }
 
-            const startDate = new Date(localStorage.getItem('startDate') || Date.now());
-            const currentWeek = Math.floor((Date.now() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
-            document.getElementById('currentWeek').textContent = currentWeek;
+        // ===== Automatic weekly reset =====
+        // Each week is keyed by its Monday. When a new week starts, this week's
+        // completed workouts are banked into the lifetime total and the day
+        // checkmarks/exercise ticks are cleared — no manual reset needed.
+        function getWeekKey() {
+            const d = new Date();
+            const daysSinceMonday = (d.getDay() + 6) % 7; // Mon=0 ... Sun=6
+            const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - daysSinceMonday);
+            return `${monday.getFullYear()}-${monday.getMonth() + 1}-${monday.getDate()}`;
+        }
+
+        function checkWeeklyReset() {
+            const key = getWeekKey();
+            const stored = localStorage.getItem('weekKey');
+            if (stored === key) return false;
+
+            if (stored) {
+                const lifetime = parseInt(localStorage.getItem('lifetimeWorkouts') || '0', 10);
+                localStorage.setItem('lifetimeWorkouts', String(lifetime + completedDays.length));
+                completedDays = [];
+                completedExercises = {};
+                localStorage.setItem('completedDays', '[]');
+                localStorage.setItem('completedExercises', '{}');
+            }
+            localStorage.setItem('weekKey', key);
+            return stored !== null;
         }
 
         function saveState() {
             const state = {
+                program: currentProgram,
                 day: currentDay,
                 exercise: currentExercise,
                 round: currentRound,
@@ -2071,6 +2715,9 @@
             if (settings.notifications) {
                 requestNotificationPermission();
                 showNotification('Notifications Enabled', 'You\'ll be notified of timer events');
+                if (isRunning && !isPaused) schedulePhaseEndNotification();
+            } else {
+                cancelPhaseEndNotification();
             }
         }
 
@@ -2078,6 +2725,8 @@
             settings.autoAdvance = !settings.autoAdvance;
             localStorage.setItem('settings', JSON.stringify(settings));
             updateSettingsUI();
+            // Re-arm the scheduled chain since the phase sequence changed
+            if (isRunning && !isPaused) schedulePhaseEndNotification();
             playBeep(700, 80);
         }
 
@@ -2133,7 +2782,14 @@
                 localStorage.setItem('startDate', Date.now());
             }
 
+            checkWeeklyReset();
             requestNotificationPermission();
+            updateProgramButtons();
+
+            // OMAD: restore UI and re-assert the daily alerts
+            updateOmadUI();
+            scheduleOmadNotifications();
+            setInterval(omadTick, 1000);
 
             // Auto-select today's workout
             const today = new Date().getDay() || 7;
@@ -2142,6 +2798,32 @@
 
         // Save state before page unload
         window.addEventListener('beforeunload', saveState);
+
+        // Catch the timer up immediately when returning from background/lock
+        // Instantly re-sync the timer to the wall clock whenever the app
+        // comes back from the lock screen or background. Uses both the web
+        // visibility event and Capacitor's native appStateChange, since
+        // visibilitychange alone is unreliable across iOS lock/unlock.
+        function onAppResume() {
+            // New week may have started while the app sat in the background
+            if (checkWeeklyReset()) {
+                updateDayButtons();
+                loadWorkout();
+            }
+            syncTimer();
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) onAppResume();
+        });
+
+        const CapApp = Capacitor.Plugins?.App;
+        if (CapApp) {
+            CapApp.addListener('appStateChange', (state) => {
+                if (state.isActive) onAppResume();
+            });
+            CapApp.addListener('resume', () => onAppResume());
+        }
 
         // Prevent audio context issues
         document.addEventListener('click', () => {
