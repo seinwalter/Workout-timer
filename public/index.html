@@ -106,9 +106,15 @@
             <div class="settings-note" id="settingsNote" hidden></div>
             <div class="setting-group-label">Backup</div>
             <div class="backup-row">
-                <button class="ghost-btn" onclick="copyBackup()">Copy backup</button>
-                <button class="ghost-btn" onclick="showRestore()">Restore…</button>
+                <button class="ghost-btn" onclick="saveBackupFile()">Save backup file</button>
+                <button class="ghost-btn" onclick="pickRestoreFile()">Restore from file</button>
             </div>
+            <div class="backup-row backup-row-small">
+                <button class="ghost-btn" onclick="copyBackup()">Copy as text</button>
+                <button class="ghost-btn" onclick="showRestore()">Paste text…</button>
+            </div>
+            <input type="file" id="restoreFile" accept=".json,application/json,text/plain" hidden onchange="restoreFromFile(this.files[0]); this.value = ''">
+            <div class="settings-note" id="backupStatus"></div>
             <textarea id="backupText" class="backup-text" hidden aria-label="Backup text"></textarea>
             <button class="start-btn" id="restoreBtn" hidden onclick="restoreBackup()">Restore this backup</button>
             <button class="timer-btn full" onclick="resetAllProgress()" style="margin-top: 20px; background: #ff4444;">
@@ -125,6 +131,20 @@
                 <button class="close-btn" onclick="closeSummary()" aria-label="Close">×</button>
             </div>
             <div id="summaryBody" class="summary"></div>
+        </div>
+    </div>
+
+    <!-- Weekly backup reminder -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Back up your progress?</div>
+                <button class="close-btn" onclick="closeBackupPrompt()" aria-label="Close">×</button>
+            </div>
+            <p class="backup-prompt-text">Last saved off this device: <b id="backupLastText">never</b>. Save a copy to iCloud Drive so your history survives even if the app gets deleted.</p>
+            <p class="backup-prompt-text" id="backupHint">In the share sheet, tap <b>Save to Files</b> → <b>iCloud Drive</b>.</p>
+            <button class="start-btn" onclick="backupNowFromPrompt()">Back up now</button>
+            <button class="ghost-btn backup-later" onclick="closeBackupPrompt()">Not now</button>
         </div>
     </div>
 

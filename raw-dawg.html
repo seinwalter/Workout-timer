@@ -2069,8 +2069,11 @@
             ${isNative ? `<div class="disclaimer">
                 <b>Automatic backups:</b> PROTOCOL keeps a daily and a weekly backup in Files › On My iPhone › PROTOCOL.
                 Last daily backup: ${s.lastDailyBackup ? esc(new Date(s.lastDailyBackup).toLocaleString()) : 'not yet'}.
-                Export a copy to iCloud Drive now and then — files inside the app are deleted if the app is.
+                Those files are deleted if the app is, so PROTOCOL asks once a week to export a copy to iCloud Drive.
+                Last saved off this phone: <b>${lastExportText()}</b>.
             </div>` : `<div class="disclaimer">
+                Last saved off this device: <b>${lastExportText()}</b>. PROTOCOL asks once a week.
+            </div><div class="disclaimer">
                 <b>Install on iPhone:</b> tap the Share button in Safari → "Add to Home Screen" to run PROTOCOL full-screen like an app. Reminders fire while the app is open; iOS limits background alerts for home-screen web apps.
             </div>`}
             <button class="text-btn" data-action="close">Done</button>
@@ -2096,6 +2099,7 @@
         if (uri) {
             try {
                 await Share.share({ title: 'PROTOCOL backup', dialogTitle: 'Save your PROTOCOL backup', files: [uri] });
+                markExported();
                 toast('Backup saved.');
             } catch (e) {
                 // share sheet dismissed (or Share missing) — the file is still in Files › PROTOCOL
@@ -2112,10 +2116,36 @@
             a.href = url; a.download = backupName();
             document.body.appendChild(a); a.click(); a.remove();
             setTimeout(() => URL.revokeObjectURL(url), 4000);
+            markExported();
             toast('Backup downloaded.');
         } catch (e) {
-            if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Backup copied to clipboard.'), () => toast('Export failed.'));
+            if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => { markExported(); toast('Backup copied to clipboard.'); }, () => toast('Export failed.'));
         }
+    }
+    // Only a copy that left the app counts — the automatic files below die with it.
+    function markExported() { state.settings.lastExportAt = Date.now(); save(); }
+    function lastExportText() {
+        const t = state.settings.lastExportAt;
+        if (!t) return 'never';
+        const days = Math.floor((Date.now() - t) / DAY);
+        return days === 0 ? 'today' : days === 1 ? 'yesterday' : days + ' days ago';
+    }
+
+    // Weekly nudge to save a copy off the phone. Shown at most once a day, and
+    // never on top of another sheet; dismissing it just waits for tomorrow.
+    function maybePromptBackup() {
+        const s = state.settings, now = Date.now();
+        if (!state.habits.length || overlay.classList.contains('show')) return;
+        if (now - (s.lastExportAt || 0) < 7 * DAY || now < (s.backupSnoozeUntil || 0)) return;
+        s.backupSnoozeUntil = now + DAY; save();
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>Back up your streaks?</h2>
+            <p class="sub">Last saved off this ${isNative ? 'phone' : 'device'}: <b>${lastExportText()}</b>. Save a copy to iCloud Drive so your history survives even if the app is deleted.</p>
+            ${isNative ? '<p class="sub">In the share sheet, tap <b>Save to Files</b> → <b>iCloud Drive</b>.</p>' : ''}
+            <button class="save-btn" data-action="backup-now">Back up now</button>
+            <button class="text-btn" data-action="close">Not now</button>
+        `);
     }
 
     // Import: pick a .json file → preview sheet → confirm replaces everything.
@@ -2414,6 +2444,7 @@
             case 'save-habit': saveHabit(); break;
             case 'close': closeSheet(); break;
             case 'export': exportData(); break;
+            case 'backup-now': closeSheet(); exportData(); break;
             case 'import': importData(); break;
             case 'reset-all': resetAll(); break;
             case 'confirm-reset-all': confirmResetAll(); break;
@@ -2465,9 +2496,10 @@
         setInterval(tick, 1000);
         syncScheduledReminders();    // refresh OS-scheduled alerts on every launch
         autoBackup();
+        setTimeout(maybePromptBackup, 1500);
     })();
     // re-render daily-changing build cards when returning to the app
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncScheduledReminders(); } });
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncScheduledReminders(); maybePromptBackup(); } });
     // native: top up scheduled alerts whenever the app returns to the foreground
     if (AppPlugin && AppPlugin.addListener) {
         AppPlugin.addListener('appStateChange', s => { if (s && s.isActive) syncScheduledReminders(); });
