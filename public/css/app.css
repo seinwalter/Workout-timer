@@ -1539,6 +1539,11 @@ button.stats { width: 100%; background: none; border: none; border-top: 0.5px so
 .setting-group-label { margin: 18px 0 8px; }
 .backup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .backup-row .ghost-btn { height: 48px; }
+.backup-row-small { margin-top: 8px; }
+.backup-row-small .ghost-btn { height: 40px; font-size: 0.85rem; color: var(--text-secondary); }
+.backup-prompt-text { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.45; margin: 0 0 14px; }
+.backup-prompt-text b { color: var(--text-primary); }
+.ghost-btn.backup-later { width: 100%; height: 52px; margin-top: 10px; }
 .backup-text { width: 100%; min-height: 90px; margin-top: 8px; border-radius: 12px; border: none; background: rgba(120, 120, 128, 0.2); color: var(--text-primary); font-family: ui-monospace, Menlo, monospace; font-size: 0.72rem; padding: 10px; }
 #restoreBtn { margin-top: 8px; height: 50px; }
 [hidden] { display: none !important; }

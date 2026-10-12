@@ -344,6 +344,7 @@ function updateSettingsUI() {
     document.getElementById('autoAdvanceToggle').classList.toggle('active', settings.autoAdvance);
     document.getElementById('healthToggle').classList.toggle('active', settings.health);
     document.getElementById('weightInput').value = settings.weightLb;
+    updateBackupStatus();
 }
 
 function setSettingsNote(text) {
@@ -399,11 +400,24 @@ function setWeight(value) {
 }
 
 // ----- Backup -----
+async function saveBackupFile() {
+    const how = await exportBackupFile();
+    if (how === 'file') setSettingsNote('Backup saved.');
+    else if (how === 'copied') setSettingsNote('Backup copied. Paste it into Notes or email it to yourself.');
+    updateBackupStatus();
+}
+
+function updateBackupStatus() {
+    document.getElementById('backupStatus').textContent = `Last saved off this ${isNativeApp ? 'phone' : 'device'}: ${lastExportText()}`;
+}
+
 async function copyBackup() {
     const json = snapshotAll();
     const box = document.getElementById('backupText');
     try {
         await navigator.clipboard.writeText(json);
+        markExported('copied');
+        updateBackupStatus();
         setSettingsNote('Backup copied. Paste it into Notes or email it to yourself.');
     } catch (e) {
         box.hidden = false;
@@ -423,15 +437,58 @@ function showRestore() {
 }
 
 function restoreBackup() {
-    const box = document.getElementById('backupText');
+    applyRestore(document.getElementById('backupText').value.trim());
+}
+
+function pickRestoreFile() {
+    document.getElementById('restoreFile').click();
+}
+
+function restoreFromFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => applyRestore(String(reader.result || '').trim());
+    reader.onerror = () => setSettingsNote('Could not read that file.');
+    reader.readAsText(file);
+}
+
+function applyRestore(json) {
     try {
-        const n = restoreSnapshot(box.value.trim());
+        const n = restoreSnapshot(json);
         backupNow();
         setSettingsNote(`Restored ${n} items. Reloading…`);
         setTimeout(() => location.reload(), 800);
     } catch (e) {
         setSettingsNote(e.message || 'That backup could not be read.');
     }
+}
+
+// ----- Weekly off-phone backup reminder -----
+// Shown at most once a day, never mid-workout or over another sheet.
+function hasProgress() {
+    return (Number(store.get('lifetimeWorkouts', 0)) || 0) > 0 || loadSessions().length > 0;
+}
+
+function maybePromptBackup() {
+    if (sessionOpen || !hasProgress() || document.querySelector('.modal.active')) return;
+    const now = Date.now();
+    if (now - (Number(store.get(EXPORT_KEY, 0)) || 0) < 7 * 86400000) return;
+    if (now < (Number(store.get('backupPromptSnooze', 0)) || 0)) return;
+    store.set('backupPromptSnooze', now + 86400000);
+    document.getElementById('backupLastText').textContent = lastExportText();
+    document.getElementById('backupHint').hidden = !(isNativeApp || navigator.maxTouchPoints > 0);
+    document.getElementById('backupModal').classList.add('active');
+}
+
+async function backupNowFromPrompt() {
+    const how = await exportBackupFile();
+    if (!how) return;   // cancelled: leave the reminder up
+    closeBackupPrompt();
+    showNotification('Backup saved', how === 'copied' ? 'Copied. Paste it into Notes or email it to yourself.' : 'Your history is safe off the app.', true);
+}
+
+function closeBackupPrompt() {
+    document.getElementById('backupModal').classList.remove('active');
 }
 
 function resetAllProgress() {
@@ -449,7 +506,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === ' ' && sessionOpen) { e.preventDefault(); togglePause(); }
 });
 
-['settingsModal', 'historyModal'].forEach(id => {
+['settingsModal', 'historyModal', 'backupModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', e => {
         if (e.target.id === id) document.getElementById(id).classList.remove('active');
     });
@@ -472,6 +529,7 @@ async function init() {
     selectDay(new Date().getDay() || 7);
 
     if (settings.health) healthSyncWeight().then(latest => { if (latest && !sessionOpen) loadWorkout(); });
+    setTimeout(maybePromptBackup, 1500);
 }
 
 document.addEventListener('DOMContentLoaded', init);
@@ -486,6 +544,7 @@ function onAppResume() {
     syncTimer();
     if (sessionOpen) tickSession();
     renderEatCard();
+    maybePromptBackup();
 }
 
 document.addEventListener('visibilitychange', () => {

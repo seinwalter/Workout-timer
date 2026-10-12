@@ -79,6 +79,88 @@ async function restoreFromNativeIfEvicted() {
     }
 }
 
+// ----- Off-phone backup file -----
+// Everything above lives inside the app and is deleted with it, so once a
+// week the app asks to save a copy elsewhere (iCloud Drive via the share
+// sheet). Native needs the Filesystem + Share plugins; without them this falls
+// back to Web Share, a download, then the clipboard.
+const Filesystem = Capacitor.Plugins?.Filesystem;
+const Share = Capacitor.Plugins?.Share;
+const isNativeApp = !!(Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+const EXPORT_KEY = 'lastBackupExport';
+
+function backupFileName() {
+    const d = new Date();
+    return `FightClub-backup-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`;
+}
+
+function markExported(how) {
+    store.set(EXPORT_KEY, Date.now());
+    return how;
+}
+
+// Resolves 'file' when a backup file was handed off, 'copied' when it fell
+// back to the clipboard, or null when the user cancelled or nothing worked.
+async function exportBackupFile() {
+    const json = snapshotAll();
+    const name = backupFileName();
+
+    if (Filesystem && Share) {
+        let uri = null;
+        try {
+            uri = (await Filesystem.writeFile({ path: name, data: json, directory: 'DOCUMENTS', encoding: 'utf8' })).uri;
+        } catch (e) {}
+        if (uri) {
+            try {
+                await Share.share({ title: 'Fight Club backup', dialogTitle: 'Save your Fight Club backup', files: [uri] });
+                return markExported('file');
+            } catch (e) {
+                return null;   // share sheet dismissed
+            }
+        }
+    }
+
+    // Phones/tablets: the Web Share sheet has "Save to Files" (and works in a
+    // home-screen web app, where downloads don't). Desktops: plain download.
+    try {
+        const file = new File([json], name, { type: 'application/json' });
+        if (navigator.maxTouchPoints > 0 && navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: 'Fight Club backup' });
+            return markExported('file');
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return null;
+    }
+
+    if (!isNativeApp) {
+        try {
+            const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            return markExported('file');
+        } catch (e) {}
+    }
+
+    try {
+        await navigator.clipboard.writeText(json);
+        return markExported('copied');
+    } catch (e) {
+        return null;
+    }
+}
+
+function lastExportText() {
+    const t = Number(store.get(EXPORT_KEY, 0)) || 0;
+    if (!t) return 'never';
+    const days = Math.floor((Date.now() - t) / 86400000);
+    return days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+}
+
 // ----- Haptics -----
 async function haptic(style = ImpactStyle.Light) {
     try { if (Haptics) await Haptics.impact({ style }); } catch (e) {}
