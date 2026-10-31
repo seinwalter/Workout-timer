@@ -49,6 +49,28 @@ if [ -f "$PLIST" ] && command -v /usr/libexec/PlistBuddy &> /dev/null; then
   echo "📁 Backups folder enabled in the Files app"
 fi
 
+# Your data lives with the bundle id. If the Xcode project's id has drifted from
+# capacitor.config.json (e.g. it was changed to get past a signing error), Xcode
+# installs a SEPARATE app with empty storage and your records look "lost".
+PBX="ios/App/App.xcodeproj/project.pbxproj"
+WANT_ID=$(grep -o '"appId": *"[^"]*"' capacitor.config.json | sed 's/.*: *"//; s/"$//')
+if [ -f "$PBX" ] && [ -n "$WANT_ID" ]; then
+  HAVE_IDS=$(grep -o 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*' "$PBX" | sed 's/.*= //' | tr -d '"' | sort -u | tr '\n' ' ' | sed 's/ $//')
+  if [ "$HAVE_IDS" = "$WANT_ID" ]; then
+    echo "🔒 Bundle id is $WANT_ID — your existing data will carry over"
+  else
+    echo ""
+    echo "⚠️  BUNDLE ID MISMATCH — Xcode project uses: ${HAVE_IDS:-unknown}"
+    echo "    capacitor.config.json expects:     $WANT_ID"
+    echo "    Installing this build creates a separate app with EMPTY data."
+    echo "    Fix: Xcode › App target › Signing & Capabilities › Bundle Identifier = $WANT_ID"
+    echo ""
+  fi
+fi
+
+echo ""
+echo "⚠️  Never delete PROTOCOL from the phone to fix a signing/expired-app error —"
+echo "    deleting it erases its data AND its backups folder. Just rebuild over it."
 echo ""
 echo "✅ Done. Now rebuild on your iPhone:"
 echo "   npx cap open ios   # then press Cmd+R in Xcode"
