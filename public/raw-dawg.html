@@ -2064,6 +2064,7 @@
             <div class="sec-title">Your data</div>
             <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line)" data-action="export">Export backup file</button>
             <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line);margin-top:10px" data-action="import">Restore from backup file</button>
+            <button class="save-btn" style="background:var(--card2);color:var(--text);border:1px solid var(--line);margin-top:10px" data-action="recover">Find lost data</button>
             <button class="text-btn del" data-action="reset-all">Erase everything</button>
 
             ${isNative ? `<div class="disclaimer">
@@ -2127,23 +2128,127 @@
         rd.onload = () => {
             const s = parseState(String(rd.result || ''));
             if (!s) { toast('That file is not a PROTOCOL backup.'); return; }
-            pendingImport = s;
-            const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : 'unknown date';
-            openSheet(`
-                <div class="sheet-grab"></div>
-                <h2>Restore this backup?</h2>
-                <p class="sub">${s.habits.length} tracker${s.habits.length === 1 ? '' : 's'}, saved ${esc(when)}. This replaces everything currently in the app.</p>
-                <button class="save-btn" data-action="confirm-import">Restore backup</button>
-                <button class="text-btn" data-action="close">Cancel</button>
-            `);
+            previewRestore(s);
         };
         rd.onerror = () => toast('Could not read that file.');
         rd.readAsText(file);
     }
-    function confirmImport() {
+    function previewRestore(s) {
+        pendingImport = s;
+        const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : 'unknown date';
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>Restore this backup?</h2>
+            <p class="sub">${s.habits.length} tracker${s.habits.length === 1 ? '' : 's'}, saved ${esc(when)}. This replaces everything currently in the app.${state.habits.length ? ' What\'s in the app now is saved to Files › PROTOCOL › PROTOCOL-before-restore.json first.' : ''}</p>
+            <button class="save-btn" data-action="confirm-import">Restore backup</button>
+            <button class="text-btn" data-action="close">Cancel</button>
+        `);
+    }
+    async function confirmImport() {
         if (!pendingImport) return;
-        state = pendingImport; pendingImport = null; migrate();
+        const incoming = pendingImport; pendingImport = null;
+        // never let a restore be the thing that loses data: keep a copy of what it replaces
+        if (state.habits.length) await writeDoc('PROTOCOL-before-restore.json', JSON.stringify(state));
+        state = incoming; migrate();
         save(); closeSheet(); render(); toast('Data restored.'); syncScheduledReminders();
+    }
+
+    /* ---------- Find lost data ----------
+       Checks every place this install can read for a copy of your trackers: the
+       localStorage mirror (any key), native Preferences (any key), and every .json
+       in Documents (auto-backups, exports, before-restore copies). iOS sandboxes
+       each app, so data held by a *different* install (another bundle id) can't
+       be read from here — the app id check flags that case instead. */
+    const EXPECTED_APP_ID = 'com.seinwalter.rawdawg';
+    let recoveryFound = [];
+    function entryCount(s) {
+        let n = 0;
+        for (const h of s.habits) for (const k in h) if (Array.isArray(h[k])) n += h[k].length;
+        return n;
+    }
+    function settle(p, ms) {   // resolve to null on reject or after ms, never throw
+        return Promise.race([Promise.resolve(p).catch(() => null), new Promise(r => setTimeout(() => r(null), ms))]);
+    }
+    async function scanForData() {
+        const found = [];
+        const add = (source, txt) => { const s = parseState(txt); if (s && s.habits.length) found.push({ source, state: s }); };
+        try {
+            for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); add('App storage', localStorage.getItem(k)); }
+        } catch (e) {}
+        if (Preferences) {
+            const r = await settle(prefsCall(() => Preferences.keys()), 2000);
+            for (const k of (r && r.keys) || []) {
+                const g = await settle(prefsCall(() => Preferences.get({ key: k })), 2000);
+                if (g && g.value) add('Durable storage', g.value);
+            }
+        }
+        if (Filesystem) {
+            const dir = await settle(Filesystem.readdir({ path: '', directory: DOCS }), 3000);
+            for (const f of (dir && dir.files) || []) {
+                const name = typeof f === 'string' ? f : (f && f.name);
+                if (!name || !/\.json$/i.test(name)) continue;
+                const r = await settle(Filesystem.readFile({ path: name, directory: DOCS, encoding: 'utf8' }), 3000);
+                if (r && typeof r.data === 'string') add('Files › PROTOCOL › ' + name, r.data);
+            }
+        }
+        // the mirror, durable store and a same-day backup are usually the same data: merge them
+        const byData = new Map();
+        for (const x of found) {
+            const key = JSON.stringify(x.state.habits);
+            if (byData.has(key)) byData.get(key).sources.push(x.source);
+            else byData.set(key, { state: x.state, sources: [x.source], key });
+        }
+        return [...byData.values()].sort((a, b) => (b.state.savedAt || 0) - (a.state.savedAt || 0) || entryCount(b.state) - entryCount(a.state));
+    }
+    async function openRecovery(auto) {
+        if (!auto) openSheet(`<div class="sheet-grab"></div><h2>Find lost data</h2><p class="sub">Searching this phone…</p>`);
+        let [found, info] = await Promise.all([scanForData(), AppPlugin ? settle(AppPlugin.getInfo(), 2000) : null]);
+        recoveryFound = found;
+        const current = JSON.stringify(state.habits);
+        let others = found.filter(x => x.key !== current);
+        if (auto) {
+            // don't offer back copies older than a deliberate "Erase everything" or "Not now"
+            const since = Math.max(state.settings.erasedAt || 0, state.settings.recoveryDismissedAt || 0);
+            others = others.filter(x => (x.state.savedAt || 0) > since);
+            if (!others.length) return;
+            recoveryFound = found = others;
+        }
+        const appId = info && info.id;
+        const idWarn = appId && appId !== EXPECTED_APP_ID ? `<div class="disclaimer" style="opacity:1;color:var(--text);margin:0 0 14px">
+            <b>⚠ This copy is installed as <code>${esc(appId)}</code>, not <code>${EXPECTED_APP_ID}</code>.</b>
+            iOS treats that as a separate app with its own empty storage. If your records were in the original app, look for a second PROTOCOL icon,
+            or set Bundle Identifier back to <code>${EXPECTED_APP_ID}</code> in Xcode › Signing &amp; Capabilities and rebuild.</div>` : '';
+        const rows = found.map((x, i) => {
+            const s = x.state, isNow = x.key === current;
+            const when = s.savedAt ? new Date(s.savedAt).toLocaleString() : 'unknown date';
+            return `<div class="hist-item" style="display:block;color:var(--text)">
+                <div><b>${s.habits.length} tracker${s.habits.length === 1 ? '' : 's'} · ${entryCount(s)} entries</b></div>
+                <div style="color:var(--muted)">Saved ${esc(when)}</div>
+                <div style="color:var(--muted)">${esc(s.habits.slice(0, 6).map(h => ((h.icon || '') + ' ' + (h.name || '')).trim()).join(', '))}${s.habits.length > 6 ? '…' : ''}</div>
+                <div style="color:var(--muted)">Found in: ${esc([...new Set(x.sources)].join(' · '))}</div>
+                ${isNow ? `<div style="color:var(--muted);margin-top:6px">This is what's in the app now.</div>`
+                        : `<button class="save-btn" style="margin-top:10px" data-action="recover-pick" data-idx="${i}">Restore this copy</button>`}
+            </div>`;
+        }).join('');
+        openSheet(`
+            <div class="sheet-grab"></div>
+            <h2>${auto ? 'Found your old data' : 'Find lost data'}</h2>
+            <p class="sub">${auto ? 'The app is empty, but there is a saved copy on this phone.' : 'Checked app storage, durable storage and every file in Files › PROTOCOL.'}</p>
+            ${idWarn}
+            ${rows || `<p class="sub">No saved copies found on this install.</p>`}
+            ${!others.length ? `<div class="disclaimer">
+                Nothing else to restore here. If the app was deleted and reinstalled, its storage and its backup folder were deleted with it —
+                use <b>Restore from backup file</b> if you exported one to iCloud Drive, AirDrop or Messages, or restore an iPhone backup from before the update.
+            </div>` : ''}
+            <button class="text-btn" data-action="${auto ? 'recover-dismiss' : 'close'}">${auto ? 'Not now' : 'Done'}</button>
+        `);
+    }
+    // Launch: an empty app that has a saved copy somewhere gets offered it. Copies older
+    // than "Erase everything" / "Not now" are left alone (Settings › Find lost data still lists them).
+    async function autoRecover() {
+        if (state.habits.length) return;
+        if (overlay.classList.contains('show')) return;
+        await openRecovery(true);
     }
 
     function resetAll() {
@@ -2157,6 +2262,7 @@
     }
     function confirmResetAll() {
         state = { habits: [], settings: state.settings };
+        state.settings.erasedAt = Date.now();   // deliberate wipe: don't offer old copies back on launch
         save(); closeSheet(); render(); toast('Wiped clean.'); syncScheduledReminders();
     }
 
@@ -2418,6 +2524,9 @@
             case 'reset-all': resetAll(); break;
             case 'confirm-reset-all': confirmResetAll(); break;
             case 'confirm-import': confirmImport(); break;
+            case 'recover': openRecovery(false); break;
+            case 'recover-pick': { const x = recoveryFound[+el.dataset.idx]; if (x) previewRestore(x.state); break; }
+            case 'recover-dismiss': state.settings.recoveryDismissedAt = Date.now(); save(); closeSheet(); break;
             case 'toggle-notif':
                 state.settings.notifications = el.checked; save();
                 if (el.checked) requestNotifPermission();
@@ -2464,7 +2573,8 @@
         tick();
         setInterval(tick, 1000);
         syncScheduledReminders();    // refresh OS-scheduled alerts on every launch
-        autoBackup();
+        await autoBackup();
+        autoRecover();               // empty app + a saved copy on the phone → offer it back
     })();
     // re-render daily-changing build cards when returning to the app
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { render(); syncScheduledReminders(); } });
